@@ -2,12 +2,14 @@ import { ViewTransition } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
-// Where the beam leaves the level ship (public/ship.svg), as fractions of its box. brand/gen.py
-// explains the numbers: the hole under the saucer is centred 48.2% across and 90.1% down.
+// Where the beam leaves the level ship (public/ship.svg), as fractions of its box: the lit hole
+// under the saucer (brand/gen.py, EMITTER) is centred 47.9% across and 90.4% down, and 14.9% of the
+// ship wide. The beam starts across its middle at that full width, behind the ship, so it pours
+// out of the glowing hole and past the ring's lip.
 const SHIP_RATIO = 352 / 1122;
-const EMITTER_X = 0.482;
-const EMITTER_Y = 0.901;
-const HOLE = 0.1; // how wide the beam is where it leaves, as a share of the ship's width
+const EMITTER_X = 0.479;
+const EMITTER_Y = 0.904;
+const HOLE = 0.149; // how wide the beam is where it leaves, as a share of the ship's width
 
 // The ship, level, with its beam coming straight down out of the hole underneath. Sizes are in
 // px and everything is placed from the ship's width, so the beam starts at the hole at any size.
@@ -38,7 +40,7 @@ export function ShipBeam({
   flight?: boolean;
 }) {
   const shipHeight = width * SHIP_RATIO;
-  const top = shipHeight * EMITTER_Y - 2; // tucked just inside the hole
+  const top = shipHeight * EMITTER_Y; // the hole's middle; the ship above covers the rest of it
   const x = width * EMITTER_X;
   const inset = ((spread - width * HOLE) / 2 / spread) * 100;
   return (

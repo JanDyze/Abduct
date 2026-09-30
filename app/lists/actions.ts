@@ -7,6 +7,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { listItems, listLikes, lists } from "@/lib/db/schema";
+import { DEFAULT_ICON, LIST_COLORS, type ListOption } from "@/lib/lists/icons";
 import { fieldErrors, listInputSchema, type FormState } from "@/lib/lists/input";
 import { ensureProfile } from "@/lib/social/profiles";
 import { onYourLists } from "@/lib/titles/feedback";
@@ -33,6 +34,21 @@ export async function createList(_prev: FormState, formData: FormData): Promise<
     .returning({ id: lists.id });
   revalidatePath("/", "layout");
   redirect(`/lists/${created.id}`, RedirectType.replace);
+}
+
+// A list made on the spot, from just a name (a title's "Put it on…" menu): the usual icon and the
+// next color along, so lists made this way still look different. Returns it, to add the title to.
+export async function createNamedList(name: string): Promise<{ list: ListOption } | { error: string }> {
+  const user = await requireUser();
+  const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(lists).where(eq(lists.userId, user.id));
+  const parsed = listInputSchema.safeParse({ name, icon: DEFAULT_ICON, color: LIST_COLORS[count % LIST_COLORS.length].id });
+  if (!parsed.success) return { error: fieldErrors(parsed.error).name ?? "Give the list a name." };
+  const [created] = await db
+    .insert(lists)
+    .values({ userId: user.id, ...parsed.data, position: sql`coalesce((select max(position) + 1 from ${lists} where user_id = ${user.id}), 0)` })
+    .returning({ id: lists.id, name: lists.name, icon: lists.icon, color: lists.color });
+  revalidatePath("/", "layout");
+  return { list: created };
 }
 
 export async function updateList(_prev: FormState, formData: FormData): Promise<FormState> {

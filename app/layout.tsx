@@ -3,6 +3,7 @@ import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
 import { ActivityPing } from "@/components/activity-ping";
 import { InstallBanner } from "@/components/install-banner";
 import { NoLongPressMenu } from "@/components/no-long-press-menu";
+import { PosterHero } from "@/components/poster-hero";
 import { ServiceWorker } from "@/components/service-worker";
 import { TimeZoneCookie } from "@/components/time-zone-cookie";
 import "./globals.css";
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <TimeZoneCookie />
         <NoLongPressMenu />
         <ActivityPing />
+        <PosterHero />
         <InstallBanner />
         {children}
       </body>

@@ -6,6 +6,7 @@ import { setOnList } from "@/app/lists/actions";
 import { ListIcon } from "@/components/list-icon";
 import { colorValue, type ListOption } from "@/lib/lists/icons";
 import { cn } from "@/lib/utils";
+import { sound } from "@/lib/sound";
 
 // Which of your lists a title is on, as chips to tap: how something added in a hurry (to your
 // default list) gets sorted later. The list you opened it from stays put here; "Remove from ..."
@@ -26,24 +27,29 @@ export function ListToggles({
   const [, start] = useTransition();
   const onlyDefault = on.size === 1 && lists.find((l) => on.has(l.id))?.isDefault;
 
-  const toggle = (listId: string) =>
+  // The chip changes at once; the save runs after, in a transition.
+  const toggle = (listId: string) => {
+    const next = !on.has(listId);
+    const flip = (value: boolean) =>
+      setOn((s) => {
+        const copy = new Set(s);
+        if (value) copy.add(listId);
+        else copy.delete(listId);
+        return copy;
+      });
+    flip(next);
+    setError(null);
+    if (next) sound.pop(4);
+    else sound.remove();
     start(async () => {
-      const next = !on.has(listId);
-      const flip = (value: boolean) =>
-        setOn((s) => {
-          const copy = new Set(s);
-          if (value) copy.add(listId);
-          else copy.delete(listId);
-          return copy;
-        });
-      flip(next);
-      setError(null);
       const result = await setOnList(titleId, listId, next);
       if (result.error) {
         flip(!next);
         setError(result.error);
+        sound.error();
       }
     });
+  };
 
   if (lists.length < 2) return null;
 

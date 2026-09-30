@@ -5,6 +5,7 @@ import { saveAccount, signOut } from "@/app/login/actions";
 import { CountryPicker } from "@/components/country-picker";
 import { NameForm } from "@/components/name-form";
 import { Screen } from "@/components/screen";
+import { SoundToggle } from "@/components/sound-toggle";
 import { GoogleMark } from "@/components/sign-in-marks";
 import { isAdmin } from "@/lib/admin";
 import { requireUser } from "@/lib/auth";
@@ -46,6 +47,10 @@ export default async function SettingsPage() {
             <LogOut className="size-4" aria-hidden /> Sign out
           </button>
         </form>
+      </section>
+
+      <section aria-labelledby="sounds-heading" className="mt-4 rounded-2xl border bg-card p-4">
+        <SoundToggle />
       </section>
 
       <section aria-labelledby="country-heading" className="mt-4 rounded-2xl border bg-card p-4">

@@ -8,22 +8,30 @@ export const KIND_ICON = { movie: Film, series: Tv, anime: Sparkles } satisfies 
 // A title's poster at 2:3, or, without one (typed in by hand, or the catalog has none), its name
 // on a dark card with the kind's icon. Posters come straight from TMDB's and AniList's CDNs,
 // already sized, so they skip Next's image optimizer.
+// `hero`: the big poster on a title's page, which the poster you tapped grows into
+// (components/poster-hero.tsx).
 export function Poster({
   src,
   name,
   kind,
   className,
   priority,
+  hero,
 }: {
   src: string | null;
   name: string;
   kind: Kind;
   className?: string;
   priority?: boolean;
+  hero?: boolean;
 }) {
   const Icon = KIND_ICON[kind];
   return (
-    <div className={cn("relative aspect-[2/3] overflow-hidden rounded-xl bg-muted ring-1 ring-border", className)}>
+    <div
+      data-poster
+      className={cn("relative aspect-[2/3] overflow-hidden rounded-xl bg-muted ring-1 ring-border", className)}
+      style={hero ? { viewTransitionName: "poster-hero" } : undefined}
+    >
       {src ? (
         <Image src={src} alt="" fill sizes="200px" unoptimized priority={priority} className="object-cover" />
       ) : (

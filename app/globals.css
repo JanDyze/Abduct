@@ -140,6 +140,20 @@
   35% { rotate: -9deg; }
   75% { rotate: 3deg; }
 }
+/* Opening a title, the poster you tapped grows into the big one on its page (components/poster-hero.tsx),
+   above the sliding pages. Both snapshots are the same poster, so they just hand over. */
+::view-transition-group(poster-hero) {
+  animation-duration: 460ms;
+  animation-timing-function: cubic-bezier(0.3, 0, 0.1, 1);
+  z-index: 15;
+}
+::view-transition-old(poster-hero),
+::view-transition-new(poster-hero) {
+  height: 100%;
+  object-fit: cover;
+  animation-duration: 460ms;
+}
+
 /* The beam under the ship waits for it to land, then switches on. */
 @keyframes beam-arrive {
   0%, 55% { opacity: 0; }

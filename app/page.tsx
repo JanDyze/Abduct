@@ -5,6 +5,7 @@ import { Greeting } from "@/components/greeting";
 import { ListRow } from "@/components/list-row";
 import { Poster } from "@/components/poster";
 import { Screen } from "@/components/screen";
+import { TonightCard } from "@/components/tonight-card";
 import { ShipBeam } from "@/components/ship-beam";
 import { requireUser } from "@/lib/auth";
 import { countTitles } from "@/lib/format";
@@ -85,15 +86,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {tonight && (
-        <div className="animate-rise mt-3 flex items-center gap-3 rounded-2xl border bg-card p-3" style={{ animationDelay: "60ms" }}>
-          <Poster src={tonight.posterUrl} name={tonight.name} kind={tonight.kind} className="w-11 shrink-0 rounded-lg" />
-          <p className="min-w-0 leading-tight">
-            <span className="block text-xs text-muted-foreground">Tonight&apos;s pick</span>
-            <span className="block truncate font-brand font-bold">{tonight.name}</span>
-          </p>
-        </div>
-      )}
+      {tonight && <TonightCard key={tonight.pickId} pick={tonight} className="animate-rise mt-3" style={{ animationDelay: "60ms" }} />}
 
       <DiscoverCard className="animate-rise mt-3" style={{ animationDelay: "90ms" }} />
 

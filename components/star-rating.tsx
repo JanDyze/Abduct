@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Star } from "lucide-react";
 import { setRating } from "@/app/items/actions";
 import { cn } from "@/lib/utils";
+import { sound } from "@/lib/sound";
 
 const WORDS = ["", "Not for me", "Meh", "Good", "Great", "Loved it"];
 
@@ -15,18 +16,21 @@ export function StarRating({ titleId, stars, size = "md", className }: { titleId
   const [error, setError] = useState<string | null>(null);
   const [, start] = useTransition();
 
-  const rate = (n: number) =>
+  // The stars change at once; the save runs after, in a transition.
+  const rate = (n: number) => {
+    const before = shown;
+    const next = shown === n ? null : n;
+    setShown(next);
+    setError(null);
+    sound.star(next);
     start(async () => {
-      const before = shown;
-      const next = shown === n ? null : n;
-      setShown(next);
-      setError(null);
       const result = await setRating(titleId, next);
       if (result.error) {
         setShown(before);
         setError(result.error);
       }
     });
+  };
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>

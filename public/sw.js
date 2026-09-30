@@ -3,7 +3,7 @@
 // "you're offline" page instead of the browser's error when there's no network. Pages themselves
 // (your lists, picks, comments) are never stored: they always come fresh from the server.
 // Bump VERSION when what's kept here changes; the old copies are cleared on the next visit.
-const VERSION = "abduct-v2";
+const VERSION = "abduct-v3";
 const OFFLINE_URL = "/offline.html";
 const PRECACHE = [OFFLINE_URL, "/logo.svg", "/ship.svg", "/list-icons.svg", "/icons/icon-192.png", "/icons/icon-512.png"];
 

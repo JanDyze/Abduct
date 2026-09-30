@@ -190,6 +190,7 @@ export function ShipCompanion() {
   return (
     <div
       ref={ref}
+      data-ship-companion
       className="animate-ufo-hop pointer-events-none absolute z-40 transition-[left,top,rotate] duration-700 ease-[cubic-bezier(0.45,0,0.2,1)] motion-reduce:transition-none"
       style={{ "--bob": "-3px" } as React.CSSProperties}
     >

@@ -188,7 +188,7 @@ export async function recentPickTitleIds(userId: string, limit = 10) {
 // next morning), for Home's "Tonight's pick".
 export async function tonightsPick(userId: string) {
   const [row] = await db
-    .select({ at: picks.createdAt, titleId: titles.id, name: titles.name, posterUrl: titles.posterUrl, kind: titles.kind })
+    .select({ pickId: picks.id, at: picks.createdAt, titleId: titles.id, name: titles.name, posterUrl: titles.posterUrl, kind: titles.kind })
     .from(picks)
     .innerJoin(titles, eq(titles.id, picks.titleId))
     .where(and(eq(picks.userId, userId), eq(picks.accepted, true), gt(picks.createdAt, sql`now() - interval '36 hours'`)))

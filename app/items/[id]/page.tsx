@@ -54,7 +54,7 @@ export default async function ItemPage({ params }: PageProps<"/items/[id]">) {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/40 to-background" />
       </div>
       <div className="animate-rise -mt-32 flex items-end gap-4">
-        <Poster src={item.posterUrl} name={item.name} kind={item.kind} priority className="w-32 shrink-0 shadow-2xl shadow-black/60" />
+        <Poster src={item.posterUrl} name={item.name} kind={item.kind} priority hero className="w-32 shrink-0 shadow-2xl shadow-black/60" />
         <div className="min-w-0 pb-1">
           <h2 className="font-brand text-2xl leading-tight font-bold text-balance">{item.name}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{titleMeta(item)}</p>

@@ -22,6 +22,14 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icons/maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
       { src: "/icons/abduct.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
     ],
+    // Share a reel (TikTok, Facebook, Instagram, YouTube) or any text to Abduct from the phone's
+    // share sheet, and it works out the title (app/share/page.tsx). Android, once installed.
+    share_target: {
+      action: "/share",
+      method: "GET",
+      enctype: "application/x-www-form-urlencoded",
+      params: { title: "title", text: "text", url: "url" },
+    },
     shortcuts: [
       { name: "Pick for me", url: "/spin", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
       { name: "Add a title", url: "/add", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },

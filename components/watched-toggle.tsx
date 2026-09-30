@@ -4,6 +4,7 @@ import { useOptimistic, useTransition } from "react";
 import { Check, Eye } from "lucide-react";
 import { setWatched } from "@/app/lists/actions";
 import { cn } from "@/lib/utils";
+import { sound } from "@/lib/sound";
 
 // Marks a title watched (or not yet) right away; the server catches up behind it.
 export function WatchedToggle({ itemId, watched, className }: { itemId: string; watched: boolean; className?: string }) {
@@ -15,6 +16,7 @@ export function WatchedToggle({ itemId, watched, className }: { itemId: string; 
       aria-pressed={shown}
       onClick={() =>
         start(async () => {
+          sound.watched(!shown);
           setShown(!shown);
           await setWatched(itemId, !shown);
         })

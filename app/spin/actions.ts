@@ -30,3 +30,13 @@ export async function acceptPick(pickId: string) {
   await db.update(picks).set({ accepted: true }).where(and(eq(picks.id, id.data), eq(picks.userId, user.id)));
   revalidatePath("/");
 }
+
+// Tonight's pick taken off Home ("not tonight after all"). It stays a pick, so the randomizer
+// still goes easy on it for a while; acceptPick puts it back (Undo).
+export async function dismissPick(pickId: string) {
+  const user = await requireUser();
+  const id = z.uuid().safeParse(pickId);
+  if (!id.success) return;
+  await db.update(picks).set({ accepted: false }).where(and(eq(picks.id, id.data), eq(picks.userId, user.id)));
+  revalidatePath("/");
+}

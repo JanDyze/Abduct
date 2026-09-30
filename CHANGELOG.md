@@ -2,6 +2,16 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.9.0 — Beam me up
+
+- Saw a movie in a reel? Share it from TikTok, Facebook, Instagram or YouTube to Abduct (on Android, once it's installed) and it works out which one it is, ready to add in one tap.
+- Add something and the UFO swoops in and beams it up.
+- Little sounds when you add, rate and let the UFO pick. Turn them off in Settings.
+- Buttons answer the moment you tap: stars, lists, likes and adds no longer wait for the server.
+- Tap a poster and it grows into the title's page.
+- Make a new list right from a title's page, and take tonight's pick off Home when plans change.
+- The UFO is solid now, with a glowing hole its beam pours from, and the logo's light falls over the name.
+
 ## 0.8.0 — Find anything
 
 - Search Discover: type a title, a genre or a topic, like zombies, time travel or heists, and see all of it.

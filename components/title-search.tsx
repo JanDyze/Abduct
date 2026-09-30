@@ -8,11 +8,13 @@ import { ListIcon } from "@/components/list-icon";
 import { Poster } from "@/components/poster";
 import { Picker } from "@/components/ui/picker";
 import { useUndoToast } from "@/components/undo-toast";
+import { abduct } from "@/lib/abduct";
 import type { ListOption } from "@/lib/lists/icons";
 import type { SearchOutcome } from "@/lib/titles/catalog";
 import { KIND_LABEL, KIND_PLURAL, KINDS, type Kind } from "@/lib/titles/kinds";
 import type { CatalogResult } from "@/lib/titles/normalize";
 import { cn } from "@/lib/utils";
+import { sound } from "@/lib/sound";
 
 // While adding or taking back; then the list item it made (or found), or what went wrong.
 type AddState = "adding" | "removing" | { itemId: string; already: boolean } | { error: string };
@@ -59,11 +61,13 @@ export function TitleSearch({ lists, initialList }: { lists: ListOption[]; initi
 
   const toast = useUndoToast();
 
-  const add = async (r: CatalogResult) => {
+  const add = async (r: CatalogResult, poster?: Element | null) => {
     const key = keyOf(r);
     setAdded((a) => ({ ...a, [key]: "adding" }));
+    abduct(poster);
     const res = await addCatalogTitle(listId, r.source, r.sourceId);
     setAdded((a) => ({ ...a, [key]: res.ok ? { itemId: res.itemId, already: res.already } : { error: res.error } }));
+    if (!res.ok) sound.error();
     if (res.ok && !res.already) toast.show(`Added ${r.name} to ${list?.name}`, () => undo(r, res.itemId));
   };
 
@@ -71,6 +75,7 @@ export function TitleSearch({ lists, initialList }: { lists: ListOption[]; initi
   const undo = async (r: CatalogResult, itemId: string) => {
     const key = keyOf(r);
     toast.hide();
+    sound.remove();
     setAdded((a) => ({ ...a, [key]: "removing" }));
     const res = await undoAdd(itemId);
     setAdded((a) => {
@@ -181,21 +186,15 @@ export function TitleSearch({ lists, initialList }: { lists: ListOption[]; initi
                 </div>
                 <button
                   type="button"
-                  onClick={() => (done ? undo(r, state.itemId) : add(r))}
+                  onClick={(e) => (done ? undo(r, state.itemId) : add(r, e.currentTarget.closest("li")?.querySelector("[data-poster]")))}
                   disabled={state === "adding" || state === "removing"}
                   aria-label={done ? `Take ${r.name} off ${list?.name}` : `Add ${r.name} to ${list?.name}`}
                   className={cn(
                     "flex size-11 shrink-0 items-center justify-center rounded-xl transition-[transform,background-color] active:scale-90",
-                    done ? "bg-primary/15 text-primary" : "bg-primary text-primary-foreground",
+                    done || state === "adding" ? "bg-primary/15 text-primary" : "bg-primary text-primary-foreground",
                   )}
                 >
-                  {state === "adding" || state === "removing" ? (
-                    <Loader2 className="size-5 animate-spin" aria-hidden />
-                  ) : done ? (
-                    <Check className="size-5" strokeWidth={3} aria-hidden />
-                  ) : (
-                    <Plus className="size-5" strokeWidth={2.5} aria-hidden />
-                  )}
+                  {done || state === "adding" ? <Check className="size-5" strokeWidth={3} aria-hidden /> : <Plus className="size-5" strokeWidth={2.5} aria-hidden />}
                 </button>
               </li>
             );

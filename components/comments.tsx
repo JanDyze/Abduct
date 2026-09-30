@@ -7,6 +7,7 @@ import type { PublicComment } from "@/lib/social/discover";
 import type { CommentView } from "@/lib/titles/feedback";
 import { cn } from "@/lib/utils";
 import { when } from "@/lib/when";
+import { sound } from "@/lib/sound";
 
 type Comment = CommentView & { sending?: boolean };
 
@@ -62,6 +63,7 @@ export function Comments({ titleId, initial }: { titleId: string; initial: Comme
     setComments((list) => [...list, temp]);
     setDraft("");
     setError(null);
+    sound.pop(2);
     startTransition(async () => {
       const result = await addComment(titleId, body, isPublic);
       if ("error" in result) {
@@ -78,6 +80,7 @@ export function Comments({ titleId, initial }: { titleId: string; initial: Comme
     if (!window.confirm("Delete this comment?")) return;
     const at = comments.indexOf(comment);
     setComments((list) => list.filter((c) => c.id !== comment.id));
+    sound.remove();
     startTransition(async () => {
       const result = await deleteComment(comment.id);
       if (result.error) {

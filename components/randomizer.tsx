@@ -15,6 +15,7 @@ import { countTitles, titleMeta } from "@/lib/format";
 import { DEFAULT_FILTERS, filterPool, genresOf, pick, reel, TIME_OPTIONS, type Candidate, type Filters, type TimeOption } from "@/lib/randomizer/pick";
 import { KIND_PLURAL, KINDS, type Kind } from "@/lib/titles/kinds";
 import { cn } from "@/lib/utils";
+import { sound } from "@/lib/sound";
 
 export type SpinItem = Candidate & {
   listId: string;
@@ -135,6 +136,7 @@ function Spinner({ items: initialItems, lists, recent: initialRecent, initialLis
   const toggleKind = (k: Kind) => update({ kinds: filters.kinds.includes(k) ? filters.kinds.filter((x) => x !== k) : [...filters.kinds, k] });
 
   const land = (c: SpinItem) => {
+    sound.land();
     setShown(c);
     setChosen(c);
     setPhase("landed");
@@ -162,7 +164,7 @@ function Spinner({ items: initialItems, lists, recent: initialRecent, initialLis
     run.forEach((step, i) => {
       at += stepDelay(i);
       const last = i === run.length - 1;
-      timers.current.push(window.setTimeout(() => (last ? land(step) : setShown(step)), last ? at + 180 : at));
+      timers.current.push(window.setTimeout(() => (last ? land(step) : (sound.tick(), setShown(step))), last ? at + 180 : at));
     });
   };
 
@@ -183,12 +185,14 @@ function Spinner({ items: initialItems, lists, recent: initialRecent, initialLis
   const accept = async () => {
     if (!chosen) return;
     setPhase("accepted");
+    sound.watched(true);
     const id = await pickId;
     if (id) await acceptPick(id);
   };
 
   const markWatched = () => {
     if (!chosen) return;
+    sound.watched(true);
     void setWatched(chosen.itemId, true);
     setItems((all) => all.map((i) => (i.titleId === chosen.titleId ? { ...i, watched: true } : i)));
     setChosen({ ...chosen, watched: true });
