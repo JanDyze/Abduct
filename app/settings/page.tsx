@@ -2,20 +2,24 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { saveAccount, signOut } from "@/app/login/actions";
+import { CountryPicker } from "@/components/country-picker";
 import { NameForm } from "@/components/name-form";
 import { Screen } from "@/components/screen";
 import { GoogleMark } from "@/components/sign-in-marks";
 import { requireUser } from "@/lib/auth";
 import { APP_VERSION } from "@/lib/changelog";
+import { countryName, detectedCountry, viewerCountry } from "@/lib/country";
 import { ensureProfile } from "@/lib/social/profiles";
+import { COUNTRY_CODES } from "@/lib/timezone-countries";
 
 export const metadata: Metadata = { title: "Settings" };
 
-// Who you're signed in as, a way out, and where the posters and details come from (TMDB asks
-// apps using its API to say so).
+// Who you're signed in as, a way out, your country, and where the posters and details come from
+// (TMDB asks apps using its API to say so).
 export default async function SettingsPage() {
   const user = await requireUser();
-  const name = await ensureProfile(user);
+  const [name, country, detected] = await Promise.all([ensureProfile(user), viewerCountry(), detectedCountry()]);
+  const countries = COUNTRY_CODES.map((code) => ({ code, name: countryName(code) })).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <Screen back={{ href: "/", label: "Home" }} title="Settings">
@@ -41,6 +45,14 @@ export default async function SettingsPage() {
             <LogOut className="size-4" aria-hidden /> Sign out
           </button>
         </form>
+      </section>
+
+      <section aria-labelledby="country-heading" className="mt-4 rounded-2xl border bg-card p-4">
+        <h2 id="country-heading" className="font-medium">
+          Country
+        </h2>
+        <p className="mt-0.5 mb-3 text-sm text-muted-foreground">For what&apos;s popular where you are, and where to watch.</p>
+        <CountryPicker current={country.chosen ? country.code : null} detected={detected.name} countries={countries} />
       </section>
 
       <section className="mt-6 flex flex-col gap-2 px-1 text-xs leading-relaxed text-muted-foreground">

@@ -1,4 +1,5 @@
 import "server-only";
+import type { Feed } from "./genres";
 import type { Kind } from "./kinds";
 import {
   fromAniList,
@@ -17,7 +18,7 @@ const TIMEOUT = 6000;
 
 export const tmdbEnabled = () => Boolean(process.env.TMDB_READ_TOKEN);
 
-async function tmdb<T>(path: string, params: Record<string, string> = {}): Promise<T> {
+export async function tmdb<T>(path: string, params: Record<string, string> = {}): Promise<T> {
   const url = new URL(`https://api.themoviedb.org/3/${path}`);
   for (const [k, v] of Object.entries({ language: "en-US", ...params })) url.searchParams.set(k, v);
   const res = await fetch(url, {
@@ -32,7 +33,7 @@ async function tmdb<T>(path: string, params: Record<string, string> = {}): Promi
 const ANILIST_FIELDS = `id title { english romaji } startDate { year } coverImage { extraLarge large } bannerImage
   description(asHtml: false) genres duration episodes averageScore`;
 
-async function anilist<T>(query: string, variables: Record<string, unknown>): Promise<T> {
+export async function anilist<T>(query: string, variables: Record<string, unknown>): Promise<T> {
   const res = await fetch("https://graphql.anilist.co", {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -44,7 +45,7 @@ async function anilist<T>(query: string, variables: Record<string, unknown>): Pr
   return json.data;
 }
 
-type TmdbPage = { results: Parameters<typeof fromTmdbHit>[0][] };
+type TmdbPage = { results: Parameters<typeof fromTmdbHit>[0][]; total_pages?: number };
 
 async function searchTmdb(query: string, kind: "movie" | "series", skipAnime: boolean) {
   const page = await tmdb<TmdbPage>(`search/${kind === "movie" ? "movie" : "tv"}`, { query, include_adult: "false" });
@@ -138,4 +139,54 @@ export async function trending(kind: Kind): Promise<CatalogResult[]> {
   }
   trendingCache.set(kind, { at: Date.now(), results });
   return results;
+}
+
+// Discover's "See all" pages (Feed, in lib/titles/genres.ts): more of a feed, a page at a time.
+export type BrowsePage = { results: CatalogResult[]; hasMore: boolean };
+
+const PER_PAGE = 20; // TMDB's fixed page size; AniList is asked for the same
+const MAX_PAGE = 50; // plenty to scroll through, and keeps the ids in the URL sensible
+
+// AniList is asked with POST, which Next doesn't cache, so its pages are kept here for an hour.
+const anilistPages = new Map<string, { at: number; page: BrowsePage }>();
+
+export async function browse(kind: Kind, feed: Feed, opts: { genre?: string; country?: string; page?: number }): Promise<BrowsePage> {
+  const page = Math.min(Math.max(1, Math.floor(opts.page ?? 1)), MAX_PAGE);
+  const none: BrowsePage = { results: [], hasMore: false };
+  if (feed === "genre" && !opts.genre) return none;
+
+  if (kind === "anime") {
+    if (feed === "country") return none;
+    const key = JSON.stringify([feed, opts.genre, page]);
+    const hit = anilistPages.get(key);
+    if (hit && Date.now() - hit.at < TRENDING_TTL) return hit.page;
+    const data = await anilist<{ Page: { pageInfo: { hasNextPage: boolean }; media: AniListMedia[] } }>(
+      `query ($page: Int, $perPage: Int, $genre: String, $sort: [MediaSort]) { Page(page: $page, perPage: $perPage) {
+        pageInfo { hasNextPage } media(type: ANIME, isAdult: false, genre: $genre, sort: $sort) { ${ANILIST_FIELDS} } } }`,
+      { page, perPage: PER_PAGE, genre: feed === "genre" ? opts.genre : null, sort: feed === "genre" ? ["POPULARITY_DESC"] : ["TRENDING_DESC"] },
+    );
+    const result: BrowsePage = {
+      results: data.Page.media.map((m) => {
+        const { source, sourceId, kind, name, year, posterUrl, overview } = fromAniList(m);
+        return { source, sourceId, kind, name, year, posterUrl, overview };
+      }),
+      hasMore: data.Page.pageInfo.hasNextPage && page < MAX_PAGE,
+    };
+    if (anilistPages.size > 200) anilistPages.delete(anilistPages.keys().next().value!);
+    anilistPages.set(key, { at: Date.now(), page: result });
+    return result;
+  }
+
+  if (!tmdbEnabled()) return none;
+  const type = kind === "movie" ? "movie" : "tv";
+  const params: Record<string, string> = { page: String(page), include_adult: "false" };
+  let path = `discover/${type}`;
+  if (feed === "trending") path = `trending/${type}/week`;
+  else if (feed === "genre") Object.assign(params, { with_genres: opts.genre!, sort_by: "popularity.desc", "vote_count.gte": "20" });
+  else Object.assign(params, { watch_region: opts.country ?? "US", with_watch_monetization_types: "flatrate|free|ads", sort_by: "popularity.desc" });
+  const data = await tmdb<TmdbPage>(path, params);
+  return {
+    results: data.results.filter((hit) => !(kind === "series" && isTmdbAnime(hit))).map((hit) => fromTmdbHit(hit, kind)),
+    hasMore: page < Math.min(data.total_pages ?? 1, MAX_PAGE),
+  };
 }

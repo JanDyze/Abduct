@@ -99,6 +99,7 @@ const itemFields = {
   watchedAt: listItems.watchedAt,
   titleId: titles.id,
   source: titles.source,
+  sourceId: titles.sourceId,
   kind: titles.kind,
   name: titles.name,
   year: titles.year,

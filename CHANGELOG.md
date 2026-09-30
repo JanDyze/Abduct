@@ -2,6 +2,14 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.7.0 — Where to watch
+
+- A title's page shows where you can watch it in your country: streaming, free, to rent or to buy. For anime, the services that stream it.
+- Discover shows what's popular in your country, and every row ends in See all: keep scrolling through trending, popular or any genre.
+- Browse by genre, for movies, series and anime.
+- Put a title on any of your lists from its page: the button beside Add opens all of them.
+- Abduct works out your country from your time zone, or pick it yourself in Settings.
+
 ## 0.6.0 — Along for the ride
 
 - A little UFO keeps you company on every page. Leave Home and it shrinks out of the big one and lands on the new page. It perches on the corner of whatever card you tap, hover over or hold your finger on, and follows along as you scroll.

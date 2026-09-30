@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Star, Users } from "lucide-react";
@@ -7,6 +8,7 @@ import { OthersComments } from "@/components/comments";
 import { Poster } from "@/components/poster";
 import { Screen } from "@/components/screen";
 import { AddToMine } from "@/components/social-buttons";
+import { WhereToWatch, WhereToWatchLoading } from "@/components/where-to-watch";
 import { requireUser } from "@/lib/auth";
 import { titleMeta } from "@/lib/format";
 import { firstItemOf, getLists } from "@/lib/lists/queries";
@@ -74,7 +76,12 @@ export default async function TitlePage({ params, searchParams }: PageProps<"/ti
       )}
 
       <div className="animate-rise mt-5">
-        <AddToMine titleId={title.id} yourItemId={yourItem} listId={target.id} listName={target.name} />
+        <AddToMine
+          titleId={title.id}
+          yourItemId={yourItem}
+          target={{ id: target.id, name: target.name, icon: target.icon, color: target.color }}
+          lists={lists.map(({ id, name, icon, color }) => ({ id, name, icon, color }))}
+        />
       </div>
 
       <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
@@ -90,6 +97,12 @@ export default async function TitlePage({ params, searchParams }: PageProps<"/ti
           </>
         )}
       </p>
+
+      {title.source !== "manual" && (
+        <Suspense fallback={<WhereToWatchLoading />}>
+          <WhereToWatch source={title.source} sourceId={title.sourceId} />
+        </Suspense>
+      )}
 
       {title.overview && <p className="mt-5 text-[0.95rem] leading-relaxed whitespace-pre-line text-foreground/85">{title.overview}</p>}
 

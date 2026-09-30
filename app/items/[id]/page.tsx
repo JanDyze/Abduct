@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Star } from "lucide-react";
@@ -11,6 +12,7 @@ import { Poster } from "@/components/poster";
 import { Screen } from "@/components/screen";
 import { StarRating } from "@/components/star-rating";
 import { WatchedToggle } from "@/components/watched-toggle";
+import { WhereToWatch, WhereToWatchLoading } from "@/components/where-to-watch";
 import { requireUser } from "@/lib/auth";
 import { titleMeta } from "@/lib/format";
 import { getItem, getLists, listsWithTitle } from "@/lib/lists/queries";
@@ -75,6 +77,12 @@ export default async function ItemPage({ params }: PageProps<"/items/[id]">) {
       )}
 
       <WatchedToggle itemId={item.itemId} watched={Boolean(item.watchedAt)} className="animate-rise mt-5" />
+
+      {item.source !== "manual" && (
+        <Suspense fallback={<WhereToWatchLoading />}>
+          <WhereToWatch source={item.source} sourceId={item.sourceId} />
+        </Suspense>
+      )}
 
       <section aria-labelledby="rating-heading" className="animate-rise mt-6" style={{ animationDelay: "80ms" }}>
         <h2 id="rating-heading" className="mb-1 font-brand text-lg font-bold">

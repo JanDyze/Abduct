@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
 import { InstallBanner } from "@/components/install-banner";
 import { ServiceWorker } from "@/components/service-worker";
+import { TimeZoneCookie } from "@/components/time-zone-cookie";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${brand.variable} dark h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <ServiceWorker />
+        <TimeZoneCookie />
         <InstallBanner />
         {children}
       </body>

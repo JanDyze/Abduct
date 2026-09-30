@@ -4,11 +4,15 @@ import { Globe, Star } from "lucide-react";
 import { Poster } from "@/components/poster";
 import { PublicListCard } from "@/components/public-list-card";
 import { Screen } from "@/components/screen";
+import { GenreChips } from "@/components/genre-chips";
 import { Trending } from "@/components/trending";
 import { requireUser } from "@/lib/auth";
+import { viewerCountry } from "@/lib/country";
 import { getLists } from "@/lib/lists/queries";
 import { mostLiked, newestLists, popularLists } from "@/lib/social/discover";
-import { trending } from "@/lib/titles/catalog";
+import { browse, trending } from "@/lib/titles/catalog";
+import { browseHref } from "@/lib/titles/genres";
+import type { Kind } from "@/lib/titles/kinds";
 
 export const metadata: Metadata = { title: "Discover" };
 
@@ -24,15 +28,35 @@ function Section({ id, title, hint, children }: { id: string; title: string; hin
   );
 }
 
-// What's out there: new and trending titles from the catalogs, what people on Abduct rate highest,
-// and the lists people share.
+// The first row of "Popular in <your country>": movies or series most popular to stream there.
+async function popularHere(kind: Kind, country: string) {
+  try {
+    return (await browse(kind, "country", { country })).results.slice(0, 18);
+  } catch (e) {
+    console.error("Popular in country failed:", e);
+    return [];
+  }
+}
+
+const seeAll = (feed: "trending" | "country") => ({
+  movie: browseHref("movie", feed),
+  series: browseHref("series", feed),
+  anime: browseHref("anime", feed),
+});
+
+// What's out there: new and trending titles from the catalogs, what's popular where you are,
+// genres to browse, what people on Abduct rate highest, and the lists people share. Each catalog
+// row ends in See all, which opens the whole feed.
 export default async function DiscoverPage() {
   const user = await requireUser();
-  const [lists, movies, series, anime, loved, popular, fresh] = await Promise.all([
+  const country = await viewerCountry();
+  const [lists, movies, series, anime, hereMovies, hereSeries, loved, popular, fresh] = await Promise.all([
     getLists(user.id),
     trending("movie"),
     trending("series"),
     trending("anime"),
+    popularHere("movie", country.code),
+    popularHere("series", country.code),
     mostLiked(),
     popularLists(),
     newestLists(),
@@ -45,7 +69,17 @@ export default async function DiscoverPage() {
   return (
     <Screen back={{ href: "/", label: "Home" }} title="Discover">
       <Section id="trending-heading" title="New & trending" hint={`Tap + to put one on ${defaultList.name}.`}>
-        <Trending byKind={{ movie: movies, series, anime }} listName={defaultList.name} />
+        <Trending byKind={{ movie: movies, series, anime }} listName={defaultList.name} seeAll={seeAll("trending")} />
+      </Section>
+
+      {(hereMovies.length > 0 || hereSeries.length > 0) && (
+        <Section id="here-heading" title={`Popular in ${country.name}`} hint={`Most popular to stream in ${country.name} right now.`}>
+          <Trending byKind={{ movie: hereMovies, series: hereSeries }} listName={defaultList.name} seeAll={seeAll("country")} />
+        </Section>
+      )}
+
+      <Section id="genres-heading" title="Browse by genre">
+        <GenreChips />
       </Section>
 
       <Section id="loved-heading" title="Most liked on Abduct" hint="What people here rate highest.">
