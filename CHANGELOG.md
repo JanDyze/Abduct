@@ -2,6 +2,10 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.7.1 — Hold on
+
+- Holding a poster, link or text on your phone no longer opens the browser's menu (Open in new tab, Save image) or selects the text. Holding in a text field still lets you paste.
+
 ## 0.7.0 — Where to watch
 
 - A title's page shows where you can watch it in your country: streaming, free, to rent or to buy. For anime, the services that stream it.

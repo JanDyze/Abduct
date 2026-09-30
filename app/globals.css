@@ -262,11 +262,18 @@ svg,
 a {
   -webkit-user-drag: none;
 }
-/* iOS link previews ("Open in New Tab") ignore the inherited value, so set it on the targets themselves. */
+/* iOS link and image previews ("Open in New Tab", "Save to Photos") ignore the inherited value, so
+   set it on the targets themselves. Android's menu is stopped in components/no-long-press-menu.tsx. */
 a,
+img,
 button,
 [role="button"] {
   -webkit-touch-callout: none;
+}
+/* A held picture is never the target itself (no image menu or preview): the press goes to the link
+   or card around it. */
+img {
+  pointer-events: none;
 }
 /* Rows of posters scroll sideways without a scrollbar. */
 .no-scrollbar {

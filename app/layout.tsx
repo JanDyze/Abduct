@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
 import { InstallBanner } from "@/components/install-banner";
+import { NoLongPressMenu } from "@/components/no-long-press-menu";
 import { ServiceWorker } from "@/components/service-worker";
 import { TimeZoneCookie } from "@/components/time-zone-cookie";
 import "./globals.css";
@@ -49,6 +50,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col">
         <ServiceWorker />
         <TimeZoneCookie />
+        <NoLongPressMenu />
         <InstallBanner />
         {children}
       </body>
