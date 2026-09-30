@@ -46,16 +46,28 @@ export const GENRES: Record<Kind, Genre[]> = {
   ),
 };
 
+// Topics shown alongside the genres, for what TMDB has no genre for. Each is one of its keywords:
+// Christian movies are tagged "christian film"; series hardly ever are, so they use "christianity"
+// (The Chosen, House of David).
+export const TOPIC_CHIPS: { name: string; byKind: Partial<Record<Kind, number>> }[] = [{ name: "Christian", byKind: { movie: 253695, series: 186 } }];
+
+// A topic chip's name, when a topic id is one of them.
+export function topicChipOf(id: number | null | undefined) {
+  return TOPIC_CHIPS.find((t) => Object.values(t.byKind).includes(id ?? -1)) ?? null;
+}
+
 export function genreOf(kind: Kind, id: string | null | undefined) {
   return GENRES[kind].find((g) => g.id === id) ?? null;
 }
 
-// Discover's feeds, each a "See all" page: trending, the most popular in a genre, and the most
-// popular of what can be streamed in your country (not for anime: AniList doesn't know countries).
-export type Feed = "trending" | "genre" | "country";
+// Discover's feeds, each a "See all" page: trending, the most popular in a genre, the most popular
+// of what can be streamed in your country, and a topic (one of TMDB's keywords, like "christian
+// film", found by searching Discover). Country and topic are TMDB's, so not for anime.
+export type Feed = "trending" | "genre" | "country" | "topic";
 
-export function browseHref(kind: Kind, feed: Feed, genre?: string) {
+// `id`: the genre's id for a genre feed, the keyword's id for a topic.
+export function browseHref(kind: Kind, feed: Feed, id?: string | number) {
   const params = new URLSearchParams({ kind, feed });
-  if (feed === "genre" && genre) params.set("genre", genre);
+  if ((feed === "genre" || feed === "topic") && id != null) params.set(feed, String(id));
   return `/discover/browse?${params}`;
 }

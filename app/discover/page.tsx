@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Globe, Star } from "lucide-react";
+import { Globe, Search, Star } from "lucide-react";
 import { Poster } from "@/components/poster";
 import { PublicListCard } from "@/components/public-list-card";
 import { Screen } from "@/components/screen";
@@ -44,8 +44,8 @@ const seeAll = (feed: "trending" | "country") => ({
   anime: browseHref("anime", feed),
 });
 
-// What's out there: new and trending titles from the catalogs, what's popular where you are,
-// genres to browse, what people on Abduct rate highest, and the lists people share. Each catalog
+// What's out there: a search, new and trending titles from the catalogs, what's popular where you
+// are, genres to browse, what people on Abduct rate highest, and the lists people share. Each catalog
 // row ends in See all, which opens the whole feed.
 export default async function DiscoverPage() {
   const user = await requireUser();
@@ -68,6 +68,15 @@ export default async function DiscoverPage() {
 
   return (
     <Screen back={{ href: "/", label: "Home" }} title="Discover">
+      {/* Opens the search page, where the field takes the typing. */}
+      <Link
+        href="/discover/search"
+        transitionTypes={["nav-forward"]}
+        className="flex h-12 items-center gap-3 rounded-2xl border border-input bg-card px-3.5 text-base text-muted-foreground transition-colors hover:bg-muted"
+      >
+        <Search className="size-5 shrink-0" aria-hidden />
+        Titles, genres, topics like Christian
+      </Link>
       <Section id="trending-heading" title="New & trending" hint={`Tap + to put one on ${defaultList.name}.`}>
         <Trending byKind={{ movie: movies, series, anime }} listName={defaultList.name} seeAll={seeAll("trending")} />
       </Section>

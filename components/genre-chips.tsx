@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { browseHref, GENRES } from "@/lib/titles/genres";
+import { browseHref, GENRES, TOPIC_CHIPS } from "@/lib/titles/genres";
 import { KIND_PLURAL, KINDS, type Kind } from "@/lib/titles/kinds";
 import { cn } from "@/lib/utils";
 
-// Discover's Browse by genre: pick movies, series or anime, then a genre to see all of it.
+// Discover's Browse by genre: pick movies, series or anime, then a genre (or a topic TMDB has no
+// genre for, like Christian) to see all of it.
 export function GenreChips() {
   const [kind, setKind] = useState<Kind>("movie");
   return (
@@ -29,10 +30,13 @@ export function GenreChips() {
         ))}
       </div>
       <ul className="flex flex-wrap gap-2">
-        {GENRES[kind].map((g) => (
-          <li key={g.id}>
+        {[
+          ...TOPIC_CHIPS.filter((t) => t.byKind[kind]).map((t) => ({ key: t.name, name: t.name, href: browseHref(kind, "topic", t.byKind[kind]) })),
+          ...GENRES[kind].map((g) => ({ key: g.id, name: g.name, href: browseHref(kind, "genre", g.id) })),
+        ].map((g) => (
+          <li key={g.key}>
             <Link
-              href={browseHref(kind, "genre", g.id)}
+              href={g.href}
               transitionTypes={["nav-forward"]}
               className="flex h-9 items-center rounded-full border bg-card px-3.5 text-sm font-medium text-muted-foreground transition-[transform,color,background-color] hover:bg-muted hover:text-foreground active:scale-95"
             >

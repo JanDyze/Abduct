@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { ChartColumn, ChevronRight, LogOut } from "lucide-react";
 import { saveAccount, signOut } from "@/app/login/actions";
 import { CountryPicker } from "@/components/country-picker";
 import { NameForm } from "@/components/name-form";
 import { Screen } from "@/components/screen";
 import { GoogleMark } from "@/components/sign-in-marks";
+import { isAdmin } from "@/lib/admin";
 import { requireUser } from "@/lib/auth";
 import { APP_VERSION } from "@/lib/changelog";
 import { countryName, detectedCountry, viewerCountry } from "@/lib/country";
@@ -14,7 +15,7 @@ import { COUNTRY_CODES } from "@/lib/timezone-countries";
 
 export const metadata: Metadata = { title: "Settings" };
 
-// Who you're signed in as, a way out, your country, and where the posters and details come from
+// Who you're signed in as, a way out, your country, the dashboard (admins only), and where the posters and details come from
 // (TMDB asks apps using its API to say so).
 export default async function SettingsPage() {
   const user = await requireUser();
@@ -54,6 +55,18 @@ export default async function SettingsPage() {
         <p className="mt-0.5 mb-3 text-sm text-muted-foreground">For what&apos;s popular where you are, and where to watch.</p>
         <CountryPicker current={country.chosen ? country.code : null} detected={detected.name} countries={countries} />
       </section>
+
+      {isAdmin(user) && (
+        <Link
+          href="/admin"
+          transitionTypes={["nav-forward"]}
+          className="mt-4 flex h-14 items-center gap-3 rounded-2xl border bg-card px-4 font-medium transition-colors hover:bg-muted"
+        >
+          <ChartColumn className="size-5 text-primary" aria-hidden />
+          <span className="flex-1">Dashboard</span>
+          <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+        </Link>
+      )}
 
       <section className="mt-6 flex flex-col gap-2 px-1 text-xs leading-relaxed text-muted-foreground">
         <p>

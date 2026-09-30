@@ -16,6 +16,7 @@ export function BrowseGrid({
   kind,
   feed,
   genre,
+  topic,
   initial,
   hasMore: initialHasMore,
   listName,
@@ -23,6 +24,7 @@ export function BrowseGrid({
   kind: Kind;
   feed: Feed;
   genre?: string;
+  topic?: number;
   initial: CatalogResult[];
   hasMore: boolean;
   listName: string;
@@ -38,7 +40,7 @@ export function BrowseGrid({
   const loadMore = () => {
     if (loading || !hasMore) return;
     start(async () => {
-      const next = await browseMore(kind, feed, genre, page + 1);
+      const next = await browseMore(kind, feed, genre, topic, page + 1);
       setFailed(Boolean(next.failed));
       if (next.failed) return;
       setPage(page + 1);

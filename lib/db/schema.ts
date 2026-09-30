@@ -180,3 +180,20 @@ export const listLikes = pgTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.listId] }), index("list_likes_list_idx").on(t.listId)],
 ).enableRLS();
+
+// Usage, for the admin dashboard: one row per screen opened by a signed-in person (ids in the
+// path folded to :id, so it says which screen, not which list or title). Everything else the
+// dashboard shows is counted from the other tables.
+export const appEvents = pgTable(
+  "app_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // "view" for now
+    path: text("path").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("app_events_created_idx").on(t.createdAt), index("app_events_user_idx").on(t.userId, t.createdAt)],
+).enableRLS();

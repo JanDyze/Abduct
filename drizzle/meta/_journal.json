@@ -43,6 +43,13 @@
       "when": 1790765860960,
       "tag": "0005_sharing",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790778313776,
+      "tag": "0006_analytics",
+      "breakpoints": true
     }
   ]
 }

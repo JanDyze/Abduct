@@ -150,13 +150,17 @@ const MAX_PAGE = 50; // plenty to scroll through, and keeps the ids in the URL s
 // AniList is asked with POST, which Next doesn't cache, so its pages are kept here for an hour.
 const anilistPages = new Map<string, { at: number; page: BrowsePage }>();
 
-export async function browse(kind: Kind, feed: Feed, opts: { genre?: string; country?: string; page?: number }): Promise<BrowsePage> {
+export async function browse(
+  kind: Kind,
+  feed: Feed,
+  opts: { genre?: string; topic?: number; country?: string; page?: number },
+): Promise<BrowsePage> {
   const page = Math.min(Math.max(1, Math.floor(opts.page ?? 1)), MAX_PAGE);
   const none: BrowsePage = { results: [], hasMore: false };
-  if (feed === "genre" && !opts.genre) return none;
+  if ((feed === "genre" && !opts.genre) || (feed === "topic" && !opts.topic)) return none;
 
   if (kind === "anime") {
-    if (feed === "country") return none;
+    if (feed === "country" || feed === "topic") return none;
     const key = JSON.stringify([feed, opts.genre, page]);
     const hit = anilistPages.get(key);
     if (hit && Date.now() - hit.at < TRENDING_TTL) return hit.page;
@@ -183,10 +187,46 @@ export async function browse(kind: Kind, feed: Feed, opts: { genre?: string; cou
   let path = `discover/${type}`;
   if (feed === "trending") path = `trending/${type}/week`;
   else if (feed === "genre") Object.assign(params, { with_genres: opts.genre!, sort_by: "popularity.desc", "vote_count.gte": "20" });
+  else if (feed === "topic") Object.assign(params, { with_keywords: String(opts.topic), sort_by: "popularity.desc" });
   else Object.assign(params, { watch_region: opts.country ?? "US", with_watch_monetization_types: "flatrate|free|ads", sort_by: "popularity.desc" });
   const data = await tmdb<TmdbPage>(path, params);
   return {
     results: data.results.filter((hit) => !(kind === "series" && isTmdbAnime(hit))).map((hit) => fromTmdbHit(hit, kind)),
     hasMore: page < Math.min(data.total_pages ?? 1, MAX_PAGE),
   };
+}
+
+// Topics: TMDB's keywords, which tag titles with what they're about ("christian film", "time
+// travel", "zombie") where genres don't go that far. Searching Discover finds them.
+export type Topic = { id: number; name: string; movies: number; series: number };
+
+// Keywords about sex aren't offered as topics, whatever the search (titles stay non-adult too).
+const ADULT_TOPIC = /\b(sex|sexual|porn|nud|naked|erotic|hentai|fetish|incest|rape|bdsm)/i;
+
+// Keywords matching a search, with how many movies and series each tags, most first. Keywords
+// tagging only a handful of titles, and adult ones, are left out.
+export async function searchTopics(query: string): Promise<Topic[]> {
+  const q = query.trim().slice(0, 100);
+  if (q.length < 2 || !tmdbEnabled()) return [];
+  const found = await tmdb<{ results: { id: number; name: string }[] }>("search/keyword", { query: q });
+  const candidates = found.results.filter((k) => !ADULT_TOPIC.test(k.name)).slice(0, 8);
+  const counted = await Promise.all(
+    candidates.map(async (k) => {
+      const count = (type: "movie" | "tv") =>
+        tmdb<{ total_results?: number }>(`discover/${type}`, { with_keywords: String(k.id), include_adult: "false" }).then((r) => r.total_results ?? 0);
+      const [movies, series] = await Promise.all([count("movie"), count("tv")]);
+      return { id: k.id, name: k.name, movies, series };
+    }),
+  );
+  return counted.filter((t) => t.movies + t.series >= 5).sort((a, b) => b.movies + b.series - (a.movies + a.series)).slice(0, 6);
+}
+
+// A topic's name, for its See all page.
+export async function topicName(id: number): Promise<string | null> {
+  if (!Number.isInteger(id) || id <= 0 || !tmdbEnabled()) return null;
+  try {
+    return (await tmdb<{ name?: string }>(`keyword/${id}`)).name ?? null;
+  } catch {
+    return null;
+  }
 }

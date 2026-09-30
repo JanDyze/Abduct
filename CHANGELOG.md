@@ -2,6 +2,11 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.8.0 — Find anything
+
+- Search Discover: type a title, a genre or a topic, like zombies, time travel or heists, and see all of it.
+- Christian movies and series have their own chip next to the genres.
+
 ## 0.7.1 — Hold on
 
 - Holding a poster, link or text on your phone no longer opens the browser's menu (Open in new tab, Save image) or selects the text. Holding in a text field still lets you paste.
