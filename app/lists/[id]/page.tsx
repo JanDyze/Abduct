@@ -1,19 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Check, Pencil, Plus, Star } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { z } from "zod";
 import { DefaultStar } from "@/components/default-star";
 import { ListBadge } from "@/components/list-icon";
 import { reorderItems } from "@/app/lists/actions";
-import { Arrangeable } from "@/components/arrange-list";
-import { Poster } from "@/components/poster";
+import { ListItemsView } from "@/components/list-items-view";
 import { Screen } from "@/components/screen";
 import { requireUser } from "@/lib/auth";
 import { titleMeta } from "@/lib/format";
 import { getItems, getList } from "@/lib/lists/queries";
-import { isKind, KIND_PLURAL, KINDS } from "@/lib/titles/kinds";
-import { cn } from "@/lib/utils";
+import { isKind } from "@/lib/titles/kinds";
 
 export async function generateMetadata({ params }: PageProps<"/lists/[id]">): Promise<Metadata> {
   const { id } = await params;
@@ -22,22 +20,6 @@ export async function generateMetadata({ params }: PageProps<"/lists/[id]">): Pr
   return { title: list?.name ?? "List" };
 }
 
-function Chip({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      replace
-      scroll={false}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        "flex h-9 shrink-0 items-center rounded-full border px-3.5 text-sm font-medium transition-colors",
-        active ? "border-primary bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground",
-      )}
-    >
-      {children}
-    </Link>
-  );
-}
 
 // One list: what's still to watch (or what's been watched), by kind, with a button to let the UFO
 // pick from just this list.
@@ -52,18 +34,7 @@ export default async function ListPage({ params, searchParams }: PageProps<"/lis
   const kind = isKind(rawKind) ? rawKind : null;
   const watchedView = show === "watched";
   const toWatch = items.filter((i) => !i.watchedAt);
-  const shown = items.filter((i) => Boolean(i.watchedAt) === watchedView && (!kind || i.kind === kind));
-  const kindsHere = KINDS.filter((k) => items.some((i) => i.kind === k));
 
-  const href = (next: { kind?: string | null; show?: string | null }) => {
-    const q = new URLSearchParams();
-    const k = next.kind === undefined ? kind : next.kind;
-    const s = next.show === undefined ? (watchedView ? "watched" : null) : next.show;
-    if (k) q.set("kind", k);
-    if (s) q.set("show", s);
-    const qs = q.toString();
-    return `/lists/${list.id}${qs ? `?${qs}` : ""}`;
-  };
 
   return (
     <Screen
@@ -115,69 +86,13 @@ export default async function ListPage({ params, searchParams }: PageProps<"/lis
               Pick from this list
             </Link>
           )}
-          <nav aria-label="Filter" className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-4">
-            <Chip href={href({ show: null })} active={!watchedView}>
-              To watch
-            </Chip>
-            <Chip href={href({ show: "watched" })} active={watchedView}>
-              Watched
-            </Chip>
-            {kindsHere.length > 1 && (
-              <>
-                <span className="w-px shrink-0 bg-border" aria-hidden />
-                <Chip href={href({ kind: null })} active={!kind}>
-                  All
-                </Chip>
-                {kindsHere.map((k) => (
-                  <Chip key={k} href={href({ kind: k })} active={kind === k}>
-                    {KIND_PLURAL[k]}
-                  </Chip>
-                ))}
-              </>
-            )}
-          </nav>
-          {shown.length === 0 ? (
-            <p className="py-12 text-center text-sm text-muted-foreground">
-              {watchedView ? "Nothing watched here yet." : "Everything here is watched. Add something new?"}
-            </p>
-          ) : (
-            <Arrangeable
-              save={reorderItems.bind(null, list.id)}
-              items={
-                watchedView || kind
-                  ? []
-                  : toWatch.map((i) => ({
-                      id: i.itemId,
-                      title: i.name,
-                      subtitle: titleMeta(i),
-                      thumb: <Poster src={i.posterUrl} name="" kind={i.kind} className="w-9 rounded-md" />,
-                    }))
-              }
-            >
-            <ul className="grid grid-cols-3 gap-x-3 gap-y-4">
-              {shown.map((item, i) => (
-                <li key={item.itemId} className="animate-rise" style={{ animationDelay: `${Math.min(i, 12) * 25}ms` }}>
-                  <Link href={`/items/${item.itemId}`} transitionTypes={["nav-forward"]} className="block transition-transform active:scale-[0.97]">
-                    <div className="relative">
-                      <Poster src={item.posterUrl} name={item.name} kind={item.kind} className={cn(item.watchedAt && "opacity-60")} />
-                      {item.watchedAt && (
-                        <span className="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                          <Check className="size-3.5" strokeWidth={3} aria-label="Watched" />
-                        </span>
-                      )}
-                    </div>
-                    <span className="mt-1.5 line-clamp-2 text-xs leading-snug font-medium">{item.name}</span>
-                    {item.stars != null && (
-                      <span className="mt-0.5 flex items-center gap-0.5 text-xs text-muted-foreground" aria-label={`You rated it ${item.stars} of 5`}>
-                        <Star className="size-3 fill-primary text-primary" aria-hidden /> {item.stars}
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            </Arrangeable>
-          )}
+          <ListItemsView
+            listId={list.id}
+            items={items.map((i) => ({ itemId: i.itemId, name: i.name, kind: i.kind, posterUrl: i.posterUrl, watched: Boolean(i.watchedAt), stars: i.stars, meta: titleMeta(i) }))}
+            initialKind={kind}
+            initialWatched={watchedView}
+            save={reorderItems.bind(null, list.id)}
+          />
         </>
       )}
     </Screen>

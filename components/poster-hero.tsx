@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { setTappedPoster } from "@/lib/hero-poster";
 
 const NAME = "poster-hero";
 
@@ -21,6 +22,9 @@ export function PosterHero() {
       if (!poster) return;
       for (const el of document.querySelectorAll<HTMLElement>("[data-poster]")) if (el.style.viewTransitionName === NAME) el.style.viewTransitionName = "";
       poster.style.viewTransitionName = NAME;
+      // for the title page's loading skeleton, which shows this poster in the hero spot
+      const name = link.getAttribute("aria-label")?.replace(/: details$/, "") ?? link.textContent?.trim() ?? "";
+      setTappedPoster({ src: poster.querySelector("img")?.getAttribute("src") ?? null, name: name.slice(0, 120) });
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);

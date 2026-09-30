@@ -2,6 +2,13 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.9.1 — No more waiting
+
+- Pages open at once: you see the page taking shape while it loads, instead of nothing happening. Opening a title, its poster is already in place.
+- Filters answer the moment you tap: a list's To watch, Watched and kinds switch instantly, and See all's chips light up with the posters loading in.
+- If a page is ever slow, the UFO lets you know it's on its way.
+- Installing Abduct on Android should work again (the share option in the manifest now matches exactly what Android expects).
+
 ## 0.9.0 — Beam me up
 
 - Saw a movie in a reel? Share it from TikTok, Facebook, Instagram or YouTube to Abduct (on Android, once it's installed) and it works out which one it is, ready to add in one tap.

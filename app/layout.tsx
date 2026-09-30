@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
 import { ActivityPing } from "@/components/activity-ping";
 import { InstallBanner } from "@/components/install-banner";
+import { NavProgress } from "@/components/nav-progress";
 import { NoLongPressMenu } from "@/components/no-long-press-menu";
 import { PosterHero } from "@/components/poster-hero";
 import { ServiceWorker } from "@/components/service-worker";
@@ -55,6 +57,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <NoLongPressMenu />
         <ActivityPing />
         <PosterHero />
+        {/* reads the address (useSearchParams), so it waits outside the first render */}
+        <Suspense>
+          <NavProgress />
+        </Suspense>
         <InstallBanner />
         {children}
       </body>

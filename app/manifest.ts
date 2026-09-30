@@ -24,10 +24,11 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     // Share a reel (TikTok, Facebook, Instagram, YouTube) or any text to Abduct from the phone's
     // share sheet, and it works out the title (app/share/page.tsx). Android, once installed.
+    // Just as Chrome documents it for a GET share target (no enctype), which Android's installer
+    // takes as it is.
     share_target: {
       action: "/share",
       method: "GET",
-      enctype: "application/x-www-form-urlencoded",
       params: { title: "title", text: "text", url: "url" },
     },
     shortcuts: [

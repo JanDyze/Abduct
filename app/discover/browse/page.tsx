@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { BrowseGrid } from "@/components/browse-grid";
+import { BrowseShell, type BrowseLink } from "@/components/browse-shell";
 import { Screen } from "@/components/screen";
 import { requireUser } from "@/lib/auth";
 import { viewerCountry } from "@/lib/country";
@@ -8,7 +8,6 @@ import { getLists } from "@/lib/lists/queries";
 import { browse, topicName, type BrowsePage } from "@/lib/titles/catalog";
 import { browseHref, genreOf, GENRES, TOPIC_CHIPS, topicChipOf, type Feed } from "@/lib/titles/genres";
 import { isKind, KIND_PLURAL, KINDS, type Kind } from "@/lib/titles/kinds";
-import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Discover" };
 
@@ -23,11 +22,6 @@ function hrefForKind(kind: Kind, feed: Feed, genreName: string | undefined, topi
   return same ? browseHref(kind, "genre", same.id) : browseHref(kind, "trending");
 }
 
-const chip = (active: boolean) =>
-  cn(
-    "flex h-9 shrink-0 items-center rounded-full border px-3.5 text-sm font-medium whitespace-nowrap transition-colors",
-    active ? "border-primary/50 bg-primary/15 text-primary" : "bg-card text-muted-foreground hover:text-foreground",
-  );
 
 // See all, for one of Discover's feeds: trending, a genre, popular in your country, or a topic
 // (Christian, or one found by searching), for movies, series or anime. Chips switch feeds in place;
@@ -61,76 +55,38 @@ export default async function BrowsePage({ searchParams }: PageProps<"/discover/
   const hint =
     feed === "country" ? `Most popular to stream in ${country.name} right now.` : feed === "genre" || feed === "topic" ? "Most popular first." : "What everyone's watching this week.";
 
+  const kindLinks: BrowseLink[] = KINDS.map((k) => ({ key: k, label: KIND_PLURAL[k], href: hrefForKind(k, feed, genre?.name, topic), active: k === kind }));
+  const chipLinks: BrowseLink[] = [
+    ...(feed === "topic" && !chipTopic ? [{ key: "topic", label: topicLabel, href: browseHref(kind, "topic", topic), active: true }] : []),
+    { key: "trending", label: "Trending", href: browseHref(kind, "trending"), active: feed === "trending" },
+    ...(kind !== "anime" ? [{ key: "country", label: `Popular in ${country.name}`, href: browseHref(kind, "country"), active: feed === "country" }] : []),
+    ...TOPIC_CHIPS.filter((t) => t.byKind[kind]).map((t) => ({ key: `t-${t.name}`, label: t.name, href: browseHref(kind, "topic", t.byKind[kind]), active: chipTopic === t })),
+    ...GENRES[kind].map((g) => ({ key: `g-${g.id}`, label: g.name, href: browseHref(kind, "genre", g.id), active: feed === "genre" && genre?.id === g.id })),
+  ];
+
   return (
     <Screen back={{ href: "/discover", label: "Discover" }} title={title} subtitle={KIND_PLURAL[kind]}>
-      <nav aria-label="Kind" className="flex gap-1 rounded-xl bg-muted p-1">
-        {KINDS.map((k) => (
-          <Link
-            key={k}
-            href={hrefForKind(k, feed, genre?.name, topic)}
-            replace
-            aria-current={k === kind ? "page" : undefined}
-            className={cn(
-              "flex h-8 flex-1 items-center justify-center rounded-lg text-sm font-medium transition-colors",
-              k === kind ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {KIND_PLURAL[k]}
-          </Link>
-        ))}
-      </nav>
-
-      <nav aria-label="Browse" className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
-        {feed === "topic" && !chipTopic && (
-          <span aria-current="page" className={chip(true)}>
-            {topicLabel}
-          </span>
-        )}
-        <Link href={browseHref(kind, "trending")} replace aria-current={feed === "trending" ? "page" : undefined} className={chip(feed === "trending")}>
-          Trending
-        </Link>
-        {kind !== "anime" && (
-          <Link href={browseHref(kind, "country")} replace aria-current={feed === "country" ? "page" : undefined} className={chip(feed === "country")}>
-            Popular in {country.name}
-          </Link>
-        )}
-        {TOPIC_CHIPS.filter((t) => t.byKind[kind]).map((t) => {
-          const active = chipTopic === t;
-          return (
-            <Link key={t.name} href={browseHref(kind, "topic", t.byKind[kind])} replace aria-current={active ? "page" : undefined} className={chip(active)}>
-              {t.name}
-            </Link>
-          );
-        })}
-        {GENRES[kind].map((g) => {
-          const active = feed === "genre" && genre?.id === g.id;
-          return (
-            <Link key={g.id} href={browseHref(kind, "genre", g.id)} replace aria-current={active ? "page" : undefined} className={chip(active)}>
-              {g.name}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <p className="mt-4 mb-3 text-sm text-muted-foreground">
-        {hint} Tap + to put one on {defaultList.name}.
-      </p>
-      {first ? (
-        <BrowseGrid
-          key={`${kind}:${feed}:${genre?.id ?? ""}:${topic ?? ""}`}
-          kind={kind}
-          feed={feed}
-          genre={genre?.id}
-          topic={feed === "topic" ? topic : undefined}
-          initial={first.results}
-          hasMore={first.hasMore}
-          listName={defaultList.name}
-        />
-      ) : (
-        <p className="rounded-2xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-          Couldn&apos;t reach the catalog. Try again in a moment.
+      <BrowseShell kinds={kindLinks} chips={chipLinks}>
+        <p className="mt-4 mb-3 text-sm text-muted-foreground">
+          {hint} Tap + to put one on {defaultList.name}.
         </p>
-      )}
+        {first ? (
+          <BrowseGrid
+            key={`${kind}:${feed}:${genre?.id ?? ""}:${topic ?? ""}`}
+            kind={kind}
+            feed={feed}
+            genre={genre?.id}
+            topic={feed === "topic" ? topic : undefined}
+            initial={first.results}
+            hasMore={first.hasMore}
+            listName={defaultList.name}
+          />
+        ) : (
+          <p className="rounded-2xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
+            Couldn&apos;t reach the catalog. Try again in a moment.
+          </p>
+        )}
+      </BrowseShell>
     </Screen>
   );
 }

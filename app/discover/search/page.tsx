@@ -63,7 +63,7 @@ export default async function DiscoverSearchPage({ searchParams }: PageProps<"/d
 
   return (
     <Screen back={{ href: "/discover", label: "Discover" }} title="Search">
-      <DiscoverSearchBox initial={q} />
+      <DiscoverSearchBox initial={q}>
 
       {!searching ? (
         <section aria-labelledby="genres-heading" className="mt-2">
@@ -117,6 +117,7 @@ export default async function DiscoverSearchPage({ searchParams }: PageProps<"/d
           </section>
         </>
       )}
+      </DiscoverSearchBox>
     </Screen>
   );
 }
