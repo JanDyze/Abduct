@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Abduct Logo Preview</title>
+<style>
+  :root { --bg: #000; --fg: #fdeedb; --accent: #fba825; --line: #2a2520; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; padding: 32px 16px;
+    background: var(--bg); color: var(--fg);
+    font: 14px/1.4 system-ui, sans-serif;
+  }
+  .grid {
+    display: grid; gap: 16px; max-width: 1100px; margin: 0 auto;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+  figure { margin: 0; border: 1px solid var(--line); border-radius: 12px; padding: 24px; }
+  figure img { display: block; width: 100%; height: 280px; object-fit: contain; }
+  figcaption { margin-top: 12px; color: #9a8f80; font-family: ui-monospace, monospace; font-size: 12px; }
+  .bar { text-align: center; margin-top: 24px; }
+  button {
+    background: transparent; color: var(--fg); border: 1px solid var(--line);
+    border-radius: 999px; padding: 8px 18px; font: inherit; cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <figure><img src="abduct-mark-intro.svg" alt="Abduct"><figcaption>abduct-mark-intro.svg</figcaption></figure>
+    <figure><img src="abduct-logo-intro.svg" alt="Abduct"><figcaption>abduct-logo-intro.svg</figcaption></figure>
+    <figure><img src="abduct-mark.svg" alt="Abduct"><figcaption>abduct-mark.svg</figcaption></figure>
+    <figure><img src="abduct-logo.svg" alt="Abduct"><figcaption>abduct-logo.svg</figcaption></figure>
+  </div>
+  <div class="bar"><button id="replay">Replay intro</button></div>
+<script>
+  document.getElementById('replay').addEventListener('click', () => {
+    document.querySelectorAll('img[src*="intro"]').forEach(img => {
+      img.src = img.src.split('?')[0] + '?t=' + Date.now();
+    });
+  });
+</script>
+</body>
+</html>

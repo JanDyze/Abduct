@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0a09">
+<title>Offline · Abduct</title>
+<!-- Shown by the service worker when a page is opened with no connection. Styles are inline and
+     the ship comes from the service worker's cache, so it looks right with no network at all. -->
+<style>
+  :root { --bg: #0b0a09; --fg: #f7ecdc; --muted: #a3978a; --beam: #fba825; --on-beam: #1c1305; color-scheme: dark; }
+  html, body { height: 100%; margin: 0; }
+  body { display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--fg);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  main { max-width: 22rem; padding: 2rem 1.5rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: .9rem; }
+  .ship { position: relative; width: 200px; height: 170px; }
+  .ship img { position: relative; width: 200px; animation: hover 4.2s ease-in-out infinite; }
+  /* The beam is off: no signal. A faint outline of where it would be. */
+  .beam { position: absolute; top: 58px; left: 50%; width: 150px; height: 110px; transform: translateX(-52%);
+    clip-path: polygon(43% 0, 57% 0, 100% 100%, 0 100%); background: linear-gradient(to bottom, rgb(251 168 37 / 18%), transparent); }
+  @keyframes hover { 50% { transform: translateY(-6px) rotate(-1deg); } }
+  @media (prefers-reduced-motion: reduce) { .ship img { animation: none; } }
+  h1 { margin: .2rem 0 0; font: 800 1.9rem/1.15 system-ui, sans-serif; letter-spacing: -0.02em; }
+  p { margin: 0; color: var(--muted); }
+  button { margin-top: .6rem; height: 3rem; padding: 0 1.5rem; border: 0; border-radius: 1rem; background: var(--beam);
+    color: var(--on-beam); font: 600 1rem system-ui, sans-serif; cursor: pointer; }
+  button:active { transform: scale(.98); }
+</style>
+</head>
+<body>
+<main>
+<div class="ship" aria-hidden="true">
+  <div class="beam"></div>
+  <img src="/ship.svg" alt="">
+</div>
+<h1>Lost the signal</h1>
+<p>You&rsquo;re offline. Abduct will pick up where you left off once you&rsquo;re connected again.</p>
+<button type="button" onclick="location.reload()">Try again</button>
+</main>
+</body>
+</html>

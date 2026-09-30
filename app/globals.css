@@ -1,0 +1,270 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Hover on a pointer, press-and-hold on touch, or keyboard focus: all count as "engaging" a card. */
+@custom-variant group-engaged {
+  @media (hover: hover) {
+    &:is(:where(.group):hover *) {
+      @slot;
+    }
+  }
+  &:is(:where(.group):active *) {
+    @slot;
+  }
+  &:is(:where(.group):focus-visible *) {
+    @slot;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-brand);
+  --font-brand: var(--font-brand);
+  --color-beam: var(--beam);
+  --color-hull: var(--hull);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Abduct is a movie-night app, so it's dark only: the logo's warm black, cream hull and orange beam. */
+:root {
+  color-scheme: dark;
+  /* visible height of the top bar; HideOnScroll sets it to 0 while the bar is hidden */
+  --header-offset: 3.5rem;
+  --background: #0b0a09;
+  --foreground: #f7ecdc;
+  --card: #151311;
+  --card-foreground: #f7ecdc;
+  --popover: #1b1815;
+  --popover-foreground: #f7ecdc;
+  --hull: #feecd2; /* the ship's cream */
+  --beam: #fba825; /* the beam's orange */
+  --primary: #fba825;
+  --primary-foreground: #1c1305;
+  --secondary: #221f1b;
+  --secondary-foreground: #f7ecdc;
+  --muted: #1d1a17;
+  --muted-foreground: #a3978a;
+  --accent: #26221d;
+  --accent-foreground: #f7ecdc;
+  --destructive: #ff7a66;
+  --border: rgb(254 236 210 / 10%);
+  --input: rgb(254 236 210 / 14%);
+  --ring: #fba825;
+  --radius: 0.625rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  /* Tailwind v4's reset leaves buttons with the arrow cursor. */
+  :where(button, [role="button"], [role="switch"], [role="tab"], [role="radio"], summary, select, label[for]):not(:disabled, [aria-disabled="true"]) {
+    cursor: pointer;
+  }
+}
+
+/* ---------- Page transitions (React <ViewTransition>, see components/page-transition.tsx) ---------- */
+
+::view-transition-old(.nav-forward) {
+  --slide-offset: -48px;
+  animation:
+    140ms ease-in both fade reverse,
+    360ms cubic-bezier(0.4, 0, 0.2, 1) both slide reverse;
+}
+::view-transition-new(.nav-forward) {
+  --slide-offset: 48px;
+  animation:
+    200ms ease-out 120ms both fade,
+    360ms cubic-bezier(0.4, 0, 0.2, 1) both slide;
+}
+::view-transition-old(.nav-back) {
+  --slide-offset: 48px;
+  animation:
+    140ms ease-in both fade reverse,
+    360ms cubic-bezier(0.4, 0, 0.2, 1) both slide reverse;
+}
+::view-transition-new(.nav-back) {
+  --slide-offset: -48px;
+  animation:
+    200ms ease-out 120ms both fade,
+    360ms cubic-bezier(0.4, 0, 0.2, 1) both slide;
+}
+/* The UFO flies between Home and Pick for me (components/ship-beam.tsx): it glides to its new place
+   and size, banking a little on the way, above the sliding pages. The two snapshots are the same
+   ship, so their cross-fade doesn't show; it covers the moment before the arriving page's ship is
+   drawn. */
+::view-transition-group(.ufo-flight) {
+  animation-duration: 620ms;
+  animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+  z-index: 20;
+}
+::view-transition-image-pair(.ufo-flight) {
+  animation: ufo-bank 620ms ease-in-out both;
+}
+@keyframes ufo-bank {
+  0%, 100% { rotate: 0deg; }
+  35% { rotate: -9deg; }
+  75% { rotate: 3deg; }
+}
+/* The beam under the ship waits for it to land, then switches on. */
+@keyframes beam-arrive {
+  0%, 55% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.animate-beam-arrive { animation: beam-arrive 700ms ease-out both; }
+
+/* The sticky header is the fixed point while content slides. */
+::view-transition-group(site-header) {
+  animation: none;
+  z-index: 10;
+  backdrop-filter: none;
+}
+::view-transition-old(site-header) {
+  display: none;
+}
+::view-transition-new(site-header) {
+  animation: none;
+}
+/* Home has no header: it fades out with the old page, and back in with the new one. */
+::view-transition-old(site-header):only-child {
+  display: block;
+  animation: 140ms ease-in both fade reverse;
+}
+::view-transition-new(site-header):only-child {
+  animation: 200ms ease-out 120ms both fade;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+@keyframes slide {
+  from {
+    translate: var(--slide-offset);
+  }
+  to {
+    translate: 0;
+  }
+}
+
+/* ---------- Motion ---------- */
+
+@keyframes rise {
+  from { opacity: 0; translate: 0 12px; }
+  to { opacity: 1; translate: 0 0; }
+}
+.animate-rise { animation: rise 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.animate-fade-in { animation: fade 250ms ease-out both; }
+
+/* The ship idles: a slow bob and a slight rock, like it's holding position over the house. */
+@keyframes hover {
+  0%, 100% { translate: 0 0; rotate: 0deg; }
+  50% { translate: 0 -6px; rotate: -1deg; }
+}
+.animate-hover { animation: hover 4.2s ease-in-out infinite; }
+
+/* The ship's beam (components/ship-beam.tsx), in the logo's colours: bright yellow where it leaves
+   the ship, orange, then fading out. Its shape is set inline from the ship's size. */
+.beam {
+  background: linear-gradient(to bottom, rgb(253 196 90 / 95%), rgb(251 168 37 / 60%) 40%, rgb(251 168 37 / 18%) 75%, transparent);
+  transition: opacity 400ms ease, filter 400ms ease;
+}
+@keyframes beam-flicker {
+  0%, 100% { opacity: 1; }
+  45% { opacity: 0.75; }
+  55% { opacity: 0.95; }
+  70% { opacity: 0.8; }
+}
+.animate-beam { animation: beam-flicker 900ms linear infinite; }
+
+/* The pick is lowered out of the beam and lands. */
+@keyframes beam-down {
+  0% { opacity: 0; translate: 0 -40px; scale: 0.6; filter: brightness(1.8) blur(3px); }
+  60% { opacity: 1; filter: brightness(1.2) blur(0); }
+  80% { translate: 0 4px; scale: 1.02; }
+  100% { opacity: 1; translate: 0 0; scale: 1; filter: none; }
+}
+.animate-beam-down { animation: beam-down 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+  .animate-rise, .animate-fade-in, .animate-hover, .animate-beam, .animate-beam-down, .animate-beam-arrive { animation: none; }
+}
+
+/* ---------- Feel like an app, not a web page ---------- */
+
+html {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none; /* no bounce or pull-to-refresh */
+}
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none; /* no long-press menu on images and links (iOS) */
+}
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+img,
+svg,
+a {
+  -webkit-user-drag: none;
+}
+/* iOS link previews ("Open in New Tab") ignore the inherited value, so set it on the targets themselves. */
+a,
+button,
+[role="button"] {
+  -webkit-touch-callout: none;
+}
+/* Rows of posters scroll sideways without a scrollbar. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
