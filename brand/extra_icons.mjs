@@ -2,8 +2,10 @@
 // Hand-drawn list icons that aren't on "Abduct Icons.png". Same look as the traced ones: flat
 // shapes in two tones, the accent (var(--icon-accent), the list's color) and the cream
 // (var(--icon-base)). Writes them into public/list-icons.svg between the EXTRA markers, so run it
-// again after brand/trace_icons.py regenerates the sprite. Each icon is drawn on a 100 x 100 grid.
+// again after brand/trace_icons.py regenerates the sprite. Each icon is drawn on a 100 x 100 grid,
+// then cropped like the traced ones: a square around what's drawn, with a little room.
 import fs from "node:fs";
+import sharp from "sharp";
 
 const SPRITE = "public/list-icons.svg";
 const ACC = "var(--icon-accent, #FBA825)";
@@ -70,7 +72,7 @@ const ICONS = {
     B(circle(50, 71, 5.5)),
   ],
   swords: [45, -45].map((deg) =>
-    g(`rotate(${deg} 50 50)`, B("M45 20L50 5L55 20L55 64L45 64Z"), A(rect(34, 64, 32, 7, 3.5)), A(rect(46, 71, 8, 15, 2)), A(circle(50, 90, 5))),
+    g(`rotate(${deg} 50 50)`, B("M43.5 20L50 4L56.5 20L56.5 63L43.5 63Z"), A(rect(32, 63, 36, 8, 4)), A(rect(45.5, 71, 9, 15, 2)), A(circle(50, 90, 5.5))),
   ),
   guns: [
     g(
@@ -281,9 +283,24 @@ const ICONS = {
   racing: [sA("M20 12L20 94", 6), A(circle(20, 9, 5)), checkered()],
 };
 
-const symbols = Object.entries(ICONS)
-  .map(([id, parts]) => `<symbol id="${id}" viewBox="0 0 100 100">${parts.join("")}</symbol>`)
-  .join("");
+// The square viewBox that fits what's drawn (measured by rendering it), 8% bigger, as the tracer does.
+async function fit(body) {
+  const px = 400, k = px / 100;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${px}" height="${px}">${body.replace(/var\(--icon-\w+, (#\w+)\)/g, "$1")}</svg>`;
+  const { data } = await sharp(Buffer.from(svg)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let x0 = px, y0 = px, x1 = 0, y1 = 0;
+  for (let y = 0; y < px; y++)
+    for (let x = 0; x < px; x++)
+      if (data[(y * px + x) * 4 + 3] > 16) {
+        x0 = Math.min(x0, x); x1 = Math.max(x1, x + 1); y0 = Math.min(y0, y); y1 = Math.max(y1, y + 1);
+      }
+  const side = (Math.max(x1 - x0, y1 - y0) / k) * 1.08, cx = (x0 + x1) / 2 / k, cy = (y0 + y1) / 2 / k;
+  return `${n(cx - side / 2)} ${n(cy - side / 2)} ${n(side)} ${n(side)}`;
+}
+
+const symbols = (
+  await Promise.all(Object.entries(ICONS).map(async ([id, parts]) => `<symbol id="${id}" viewBox="${await fit(parts.join(""))}">${parts.join("")}</symbol>`))
+).join("");
 
 const sprite = fs.readFileSync(SPRITE, "utf8");
 const block = `<!--EXTRA-->${symbols}<!--/EXTRA-->`;

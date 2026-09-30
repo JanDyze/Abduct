@@ -1,15 +1,18 @@
 import { AppHeader, type BackLink } from "@/components/app-header";
 import { PageTransition } from "@/components/page-transition";
+import { ShipCompanion } from "@/components/ship-companion";
 import { cn } from "@/lib/utils";
 
 // Page frame: sticky header outside the transition, content inside it so only the content slides.
 // `header={false}` is for a page whose first card already does the header's job (home).
+// `ship={false}` is for a page that shows the big UFO itself, instead of the small one in a corner.
 export function Screen({
   back,
   title,
   subtitle,
   action,
   header = true,
+  ship = true,
   className,
   children,
 }: {
@@ -18,6 +21,7 @@ export function Screen({
   subtitle?: string;
   action?: React.ReactNode;
   header?: boolean;
+  ship?: boolean;
   className?: string;
   children: React.ReactNode;
 }) {
@@ -28,6 +32,7 @@ export function Screen({
           {action}
         </AppHeader>
       )}
+      {ship && <ShipCompanion />}
       <PageTransition>
         <main
           className={cn(

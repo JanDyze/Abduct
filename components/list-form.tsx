@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { createList, updateList } from "@/app/lists/actions";
 import { ListBadge, ListIcon } from "@/components/list-icon";
 import { SubmitButton } from "@/components/submit-button";
@@ -13,11 +13,23 @@ import { cn } from "@/lib/utils";
 
 // Name a list and give it a cover: an icon and a color, so it's easy to spot. The same form makes a
 // new list and edits one.
+
+// Icons shown before "All icons" is opened: three rows, so Save isn't a long scroll away.
+const FEW_ICONS = 18;
+
 export function ListForm({ list }: { list?: { id: string; name: string; icon: string; color: string } }) {
   const [state, action] = useActionState<FormState, FormData>(list ? updateList : createList, {});
   const [icon, setIcon] = useState<string>(list?.icon ?? "movie-night");
   const [color, setColor] = useState<string>(list?.color ?? DEFAULT_COLOR);
   const [name, setName] = useState(list?.name ?? "");
+  const [allIcons, setAllIcons] = useState(false);
+  // Closed, the grid still shows the chosen icon: in the last spot when it's not one of the first few.
+  const chosen = LIST_ICONS.findIndex((i) => i.id === icon);
+  const shownIcons = allIcons
+    ? LIST_ICONS
+    : chosen < FEW_ICONS
+      ? LIST_ICONS.slice(0, FEW_ICONS)
+      : [...LIST_ICONS.slice(0, FEW_ICONS - 1), LIST_ICONS[chosen]];
 
   return (
     <form action={action} className="flex flex-col gap-6">
@@ -70,8 +82,8 @@ export function ListForm({ list }: { list?: { id: string; name: string; icon: st
 
       <fieldset>
         <legend className="mb-2.5 text-sm font-medium">Icon</legend>
-        <div className="grid grid-cols-6 gap-2">
-          {LIST_ICONS.map((i) => (
+        <div id="list-icons" className="grid grid-cols-6 gap-2">
+          {shownIcons.map((i) => (
             <button
               key={i.id}
               type="button"
@@ -89,6 +101,16 @@ export function ListForm({ list }: { list?: { id: string; name: string; icon: st
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          aria-expanded={allIcons}
+          aria-controls="list-icons"
+          onClick={() => setAllIcons(!allIcons)}
+          className="mt-2 flex h-10 w-full items-center justify-center gap-1.5 rounded-xl text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          {allIcons ? "Fewer icons" : `All ${LIST_ICONS.length} icons`}
+          <ChevronDown className={cn("size-4 transition-transform", allIcons && "rotate-180")} aria-hidden />
+        </button>
       </fieldset>
 
       {state.errors?.form && (
@@ -96,7 +118,10 @@ export function ListForm({ list }: { list?: { id: string; name: string; icon: st
           {state.errors.form}
         </p>
       )}
-      <SubmitButton className="h-12 rounded-xl text-base font-semibold">{list ? "Save" : "Make list"}</SubmitButton>
+      {/* Stays at the bottom of the screen while the form scrolls under it. */}
+      <div className="sticky bottom-0 z-10 -mx-4 -mt-2 bg-gradient-to-t from-background from-70% to-transparent px-4 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <SubmitButton className="h-12 w-full rounded-xl text-base font-semibold">{list ? "Save" : "Make list"}</SubmitButton>
+      </div>
     </form>
   );
 }

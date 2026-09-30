@@ -33,7 +33,7 @@ export default async function SpinPage({ searchParams }: PageProps<"/spin">) {
   }));
 
   return (
-    <Screen back={from ? { href: `/lists/${from.id}`, label: from.name } : { href: "/", label: "Home" }} title="Pick for me">
+    <Screen back={from ? { href: `/lists/${from.id}`, label: from.name } : { href: "/", label: "Home" }} title="Pick for me" ship={false}>
       <Randomizer
         items={items}
         lists={lists.map(({ id, name, icon, color }) => ({ id, name, icon, color }))}

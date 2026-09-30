@@ -27,7 +27,7 @@ export default async function HomePage() {
   const firstName = user.guest ? null : user.name?.split(/\s+/)[0];
 
   return (
-    <Screen header={false}>
+    <Screen header={false} ship={false}>
       <section
         aria-labelledby="pick-heading"
         className="animate-rise relative isolate overflow-hidden rounded-3xl border bg-card p-5 pt-28"

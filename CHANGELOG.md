@@ -2,6 +2,12 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.6.0 — Along for the ride
+
+- A little UFO keeps you company on every page. Leave Home and it shrinks out of the big one and lands on the new page. It perches on the corner of whatever card you tap, hover over or hold your finger on, and follows along as you scroll.
+- 30 new list icons: zombies, vampires, aliens, robots, comics, anime, swords, guns, slasher, pirates, ninjas, spies, knights, spiders, apocalypse, time travel, magic, rockets, explosive, racing, games, books, series, classics, awards, trending, kids, animals, winter and ocean.
+- Making or editing a list is quicker: the icons show three rows until you open them all, and Save stays at the bottom of the screen.
+
 ## 0.5.0 — Install it
 
 - Put Abduct on your home screen: a bar at the top offers to install it (on iPhone: Share, then Add to Home Screen), and it opens in its own window like an app.

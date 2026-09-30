@@ -208,7 +208,7 @@ function Spinner({ items: initialItems, lists, recent: initialRecent, initialLis
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <ShipBeam width={200} beam={70} spread={120} beamClassName="opacity-50" />
+        <ShipBeam width={200} beam={70} spread={120} beamClassName="opacity-50" flight />
         <h2 className="mt-4 font-brand text-xl font-bold">Nothing to pick from yet</h2>
         <p className="max-w-64 text-sm text-muted-foreground">Add a few movies, series or anime to a list, then come back and let the UFO choose.</p>
         <Link href="/add" className="mt-2 flex h-11 items-center rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground">

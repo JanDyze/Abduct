@@ -1,4 +1,5 @@
 # Run from the project root: uv run --with potracer --with pillow --with numpy python brand/trace_icons.py "brand/Abduct Icons.png" public/list-icons.svg /dev/null
+# Then run `node brand/extra_icons.mjs` to add back the hand-drawn icons this overwrites.
 # Traces the list icons from "Abduct Icons.png" (6 x 8 grid, labels dropped) into an SVG sprite.
 # Two layers per icon: the accent (orange in the sheet) drawn first as var(--icon-accent), slightly
 # grown under the cream so there are no seams, then the cream (var(--icon-base)) on top.

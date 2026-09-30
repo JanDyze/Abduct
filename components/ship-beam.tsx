@@ -14,9 +14,10 @@ const HOLE = 0.1; // how wide the beam is where it leaves, as a share of the shi
 // Ship and beam bob together, rocking about the hole. Its parent positions it (not with
 // translate utilities, which the bob animation would override).
 //
-// `flight`: the ship flies between pages that both have one (Home and Pick for me): it's a shared
-// element named "ufo", so going from one to the other it moves and resizes into its new place
-// while the page slides (::view-transition-*(.ufo-flight) in globals.css). Only the ship flies;
+// `flight`: the ship flies between pages: it's a shared element named "ufo" (the big one on Home and
+// Pick for me, the small one in a corner everywhere else, components/ship-companion.tsx), so going
+// from one page to the next it moves and resizes into its new place while the page slides
+// (::view-transition-*(.ufo-flight) in globals.css). A page must have only one. Only the ship flies;
 // each page's beam is a different shape, so it fades in once the ship has arrived.
 // `default="none"` keeps it still for every other update.
 export function ShipBeam({

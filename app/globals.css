@@ -123,7 +123,7 @@
     200ms ease-out 120ms both fade,
     360ms cubic-bezier(0.4, 0, 0.2, 1) both slide;
 }
-/* The UFO flies between Home and Pick for me (components/ship-beam.tsx): it glides to its new place
+/* The UFO flies from page to page (components/ship-beam.tsx): it glides to its new place
    and size, banking a little on the way, above the sliding pages. The two snapshots are the same
    ship, so their cross-fade doesn't show; it covers the moment before the arriving page's ship is
    drawn. */
@@ -195,9 +195,16 @@
 /* The ship idles: a slow bob and a slight rock, like it's holding position over the house. */
 @keyframes hover {
   0%, 100% { translate: 0 0; rotate: 0deg; }
-  50% { translate: 0 -6px; rotate: -1deg; }
+  50% { translate: 0 var(--bob, -6px); rotate: -1deg; }
 }
 .animate-hover { animation: hover 4.2s ease-in-out infinite; }
+
+/* The small UFO (components/ship-companion.tsx) pops up a little as it arrives on a page. */
+@keyframes ufo-hop {
+  0%, 100% { translate: 0 0; }
+  40% { translate: 0 -10px; }
+}
+.animate-ufo-hop { animation: ufo-hop 600ms cubic-bezier(0.3, 0, 0.2, 1) both; }
 
 /* The ship's beam (components/ship-beam.tsx), in the logo's colours: bright yellow where it leaves
    the ship, orange, then fading out. Its shape is set inline from the ship's size. */
@@ -228,7 +235,7 @@
   ::view-transition-new(*) {
     animation: none !important;
   }
-  .animate-rise, .animate-fade-in, .animate-hover, .animate-beam, .animate-beam-down, .animate-beam-arrive { animation: none; }
+  .animate-rise, .animate-fade-in, .animate-hover, .animate-beam, .animate-beam-down, .animate-beam-arrive, .animate-ufo-hop { animation: none; }
 }
 
 /* ---------- Feel like an app, not a web page ---------- */
