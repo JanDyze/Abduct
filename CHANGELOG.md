@@ -2,6 +2,12 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.14.0 — Tidy with AI
+
+- My lists has a new Tidy with AI button: Claude looks at every list and everything on them and reorganizes them into lists that are easy to pick from. It can make new lists, rename, restyle, merge or delete them, move titles where they belong, and take off duplicates and junk. Watched stays watched.
+- Tell it how you'd like them sorted (by mood, keep Date night, one list for anime…), or leave it to Claude.
+- See the plan before it happens, or turn on Apply straight away. Either way, Undo the last tidy puts everything back, and keeps anything you've added since.
+
 ## 0.13.0 — Hold it
 
 - Hold a poster in Discover, search or a share to choose which list it goes on, instead of your default. You can make a new list right there too. On a computer, right-click it.

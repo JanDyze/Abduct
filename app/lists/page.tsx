@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Dices, Hand, Plus } from "lucide-react";
+import { Dices, Hand, Plus, Sparkles } from "lucide-react";
 import { reorderLists } from "@/app/lists/actions";
 import { Arrangeable } from "@/components/arrange-list";
 import { ListBadge } from "@/components/list-icon";
@@ -8,11 +8,12 @@ import { ListGrid } from "@/components/list-grid";
 import { Screen } from "@/components/screen";
 import { requireUser } from "@/lib/auth";
 import { getLists, listStats } from "@/lib/lists/queries";
+import { tidyAvailable } from "@/lib/lists/tidy";
 
 export const metadata: Metadata = { title: "My lists" };
 
 // Your lists: how you're doing across all of them up top, then a card each. Hold a card for its
-// quick actions; Arrange puts them in your order.
+// quick actions; Arrange puts them in your order; Tidy with AI lets Claude reorganize the lot.
 export default async function ListsPage() {
   const user = await requireUser();
   const [lists, stats] = await Promise.all([getLists(user.id), listStats(user.id)]);
@@ -67,6 +68,20 @@ export default async function ListsPage() {
           </>
         )}
       </section>
+
+      {tidyAvailable() && stats.total > 0 && (
+        <Link
+          href="/lists/tidy"
+          transitionTypes={["nav-forward"]}
+          className="animate-rise mb-4 flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary/10 p-3.5 transition-[transform,background-color] hover:bg-primary/15 active:scale-[0.99]"
+        >
+          <Sparkles className="size-5 shrink-0 text-primary" aria-hidden />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">Tidy with AI</span>
+            <span className="block text-xs text-muted-foreground">Let Claude sort everything into the right lists</span>
+          </span>
+        </Link>
+      )}
 
       <Arrangeable
         save={reorderLists}
