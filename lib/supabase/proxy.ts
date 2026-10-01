@@ -5,7 +5,7 @@ import { NEXT_COOKIE, safeNextPath } from "@/lib/next-path";
 // Paths reachable without a session. /api/cron checks its own bearer token; /auth/confirm is where
 // Google sign-in lands; /offline.html and /sw.js are the installed app's offline page and service
 // worker.
-const PUBLIC_PATHS = ["/login", "/api/cron", "/auth", "/offline.html", "/sw.js"];
+const PUBLIC_PATHS = ["/login", "/api/cron", "/auth", "/offline.html", "/sw.js", "/share/receive"];
 
 function isPublic(pathname: string) {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));

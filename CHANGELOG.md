@@ -2,6 +2,11 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.10.0 — Listen in
+
+- The caption doesn't say which movie it is? Save the reel, then share the video itself to Abduct: it listens to the clip, and when someone names the movie, it finds it.
+- Search several titles at once: separate them with commas, like avengers, hulk, interstellar.
+
 ## 0.9.1 — No more waiting
 
 - Pages open at once: you see the page taking shape while it loads, instead of nothing happening. Opening a title, its poster is already in place.

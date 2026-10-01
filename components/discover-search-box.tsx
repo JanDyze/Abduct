@@ -42,7 +42,7 @@ export function DiscoverSearchBox({ initial, children }: { initial: string; chil
             aria-label="Search Discover"
             autoFocus
             enterKeyHint="search"
-            maxLength={100}
+            maxLength={300}
             className="h-12 w-full rounded-2xl border border-input bg-card pr-10 pl-11 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
           />
           {searching && <Loader2 className="absolute top-1/2 right-3.5 size-5 -translate-y-1/2 animate-spin text-muted-foreground" aria-hidden />}

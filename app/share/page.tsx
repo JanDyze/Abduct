@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 import { CatalogGrid } from "@/components/catalog-grid";
 import { Screen } from "@/components/screen";
 import { ShareBest } from "@/components/share-best";
+import { SharedMedia } from "@/components/shared-media";
 import { requireUser } from "@/lib/auth";
 import { getLists } from "@/lib/lists/queries";
 import { candidatesFrom, firstUrl, matchScore, yearFrom } from "@/lib/share/extract";
@@ -23,21 +24,25 @@ export default async function SharePage({ searchParams }: PageProps<"/share">) {
   const user = await requireUser();
   const params = await searchParams;
   const title = str(params.title), text = str(params.text);
+  const transcript = str(params.transcript).replace(/^-$/, "");
+  const media = str(params.media);
+  const canListen = Boolean(process.env.ASSEMBLYAI_API_KEY);
   const url = str(params.url) || firstUrl(`${text}\n${title}`);
 
   const [lists, shared] = await Promise.all([getLists(user.id), url ? sharedLink(url) : null]);
   const defaultList = lists.find((l) => l.isDefault) ?? lists[0];
-  const pool = [title, text, shared?.caption].filter(Boolean).join("\n");
+  // what was said in the clip first: a narrator naming the movie beats a caption's hashtags
+  const pool = [transcript, title, text, shared?.caption].filter(Boolean).join("\n");
   const guesses = candidatesFrom(pool);
   const year = yearFrom(pool);
 
   // Each of the first few guesses searched; every hit scored by how well it matches its guess
   // (earlier guesses count for more), the year if one was named, and the catalog's own order.
-  const searched = await Promise.all(guesses.slice(0, 3).map((g) => searchCatalog(g, "all").catch(() => null)));
+  const searched = media === "1" && canListen ? [] : await Promise.all(guesses.slice(0, 4).map((g) => searchCatalog(g, "all").catch(() => null)));
   const scored = new Map<string, { r: CatalogResult; score: number }>();
   searched.forEach((outcome, gi) =>
     outcome?.results.slice(0, 12).forEach((r, ri) => {
-      const score = matchScore(r.name, guesses[gi]) + (3 - gi) * 8 + (year && r.year === year ? 20 : 0) - ri * 1.5;
+      const score = matchScore(r.name, guesses[gi]) + (4 - gi) * 8 + (year && r.year === year ? 20 : 0) - ri * 1.5;
       const key = `${r.source}:${r.sourceId}`;
       if ((scored.get(key)?.score ?? -Infinity) < score) scored.set(key, { r, score });
     }),
@@ -57,6 +62,17 @@ export default async function SharePage({ searchParams }: PageProps<"/share">) {
         {snippet ? <p className="mt-1 line-clamp-3 text-foreground/85">{snippet}</p> : <p className="mt-1 text-muted-foreground">No caption came with it.</p>}
       </section>
 
+      {transcript && (
+        <section className="mt-3 rounded-2xl border bg-card/60 px-4 py-3 text-sm">
+          <p className="text-xs text-muted-foreground">Heard in the clip</p>
+          <p className="mt-1 line-clamp-4 text-foreground/85">“{transcript}”</p>
+        </section>
+      )}
+
+      {media === "1" && canListen ? (
+        <SharedMedia params={Object.fromEntries(Object.entries({ title, text, url: url ?? "", media }).filter(([, v]) => v))} />
+      ) : (
+      <>
       <div className="mt-5">
         {best ? (
           <ShareBest result={best} listName={defaultList.name} />
@@ -77,6 +93,14 @@ export default async function SharePage({ searchParams }: PageProps<"/share">) {
         {guesses[0] ? <span className="truncate text-foreground">“{guesses[0]}”</span> : null}
       </Link>
 
+      {!best && canListen && !transcript && (
+        <p className="mt-4 rounded-2xl border border-dashed px-4 py-3 text-sm text-muted-foreground">
+          The post doesn&apos;t say which movie it is? Save the video to your phone, then share the video itself to Abduct: it&apos;ll
+          listen to the clip for the title.
+          {media === "lost" ? " (Open Abduct once from your home screen first, so it can take videos.)" : ""}
+        </p>
+      )}
+
       {others.length > 0 && (
         <section aria-labelledby="others-heading" className="mt-8">
           <h2 id="others-heading" className="mb-3 font-brand text-lg font-bold">
@@ -84,6 +108,8 @@ export default async function SharePage({ searchParams }: PageProps<"/share">) {
           </h2>
           <CatalogGrid results={others} listName={defaultList.name} />
         </section>
+      )}
+      </>
       )}
     </Screen>
   );

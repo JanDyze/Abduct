@@ -7,6 +7,7 @@ import { Screen } from "@/components/screen";
 import { requireUser } from "@/lib/auth";
 import { getLists } from "@/lib/lists/queries";
 import { searchCatalog, searchTopics, type SearchOutcome, type Topic } from "@/lib/titles/catalog";
+import { splitTerms } from "@/lib/share/extract";
 import { browseHref, GENRES, TOPIC_CHIPS } from "@/lib/titles/genres";
 import { KIND_PLURAL, KINDS } from "@/lib/titles/kinds";
 
@@ -45,20 +46,24 @@ function topicMatch(t: Topic): Match {
 }
 
 // Search Discover: movies, series and anime by name, and the genres and topics (TMDB keywords like
-// "christian film" or "time travel") that match, each opening its See all page.
+// "christian film" or "time travel") that match, each opening its See all page. Several titles at
+// once, separated by commas ("avengers, hulk, interstellar"), are each searched, side by side.
 export default async function DiscoverSearchPage({ searchParams }: PageProps<"/discover/search">) {
   const user = await requireUser();
   const { q: raw } = await searchParams;
-  const q = (typeof raw === "string" ? raw : "").trim().slice(0, 100);
-  const searching = q.length >= 2;
+  const q = (typeof raw === "string" ? raw : "").trim().slice(0, 300);
+  const terms = splitTerms(q);
+  const several = terms.length > 1;
+  const searching = terms.length > 0;
 
-  const [lists, outcome, topics] = await Promise.all([
+  const [lists, outcome, topics, each] = await Promise.all([
     getLists(user.id),
-    searching ? searchCatalog(q, "all") : Promise.resolve<SearchOutcome | null>(null),
-    searching ? searchTopics(q).catch((e) => (console.error("Topic search failed:", e), [] as Topic[])) : Promise.resolve([] as Topic[]),
+    searching && !several ? searchCatalog(terms[0], "all") : Promise.resolve<SearchOutcome | null>(null),
+    searching && !several ? searchTopics(terms[0]).catch((e) => (console.error("Topic search failed:", e), [] as Topic[])) : Promise.resolve([] as Topic[]),
+    several ? Promise.all(terms.map((t) => searchCatalog(t, "all").catch(() => null))) : Promise.resolve([]),
   ]);
   const defaultList = lists.find((l) => l.isDefault) ?? lists[0];
-  const matches = searching ? [...localMatches(q), ...topics.map(topicMatch)] : [];
+  const matches = searching && !several ? [...localMatches(terms[0]), ...topics.map(topicMatch)] : [];
   const results = outcome?.results ?? [];
 
   return (
@@ -67,12 +72,32 @@ export default async function DiscoverSearchPage({ searchParams }: PageProps<"/d
 
       {!searching ? (
         <section aria-labelledby="genres-heading" className="mt-2">
-          <p className="mb-4 text-sm text-muted-foreground">Find a movie, series or anime, or a topic like Christian, time travel or zombies.</p>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Find a movie, series or anime, or a topic like Christian, time travel or zombies. Looking for several? Separate them with commas:
+            avengers, hulk, interstellar.
+          </p>
           <h2 id="genres-heading" className="mb-3 font-brand text-xl font-bold">
             Browse by genre
           </h2>
           <GenreChips />
         </section>
+      ) : several ? (
+        <>
+          <p className="mt-1 text-sm text-muted-foreground">Tap + to put one on {defaultList.name}, or open it to choose a list.</p>
+          {terms.map((term, i) => {
+            const found = each[i]?.results.slice(0, 6) ?? [];
+            return (
+              <section key={term} aria-label={term} className="mt-6">
+                <h2 className="mb-3 font-brand text-lg font-bold">“{term}”</h2>
+                {found.length ? (
+                  <CatalogGrid key={`${q}:${term}`} results={found} listName={defaultList.name} />
+                ) : (
+                  <p className="rounded-2xl border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">No titles match “{term}”.</p>
+                )}
+              </section>
+            );
+          })}
+        </>
       ) : (
         <>
           {matches.length > 0 && (

@@ -37,9 +37,32 @@ function fromHashtag(tag: string) {
     .trim();
 }
 
+// Where a spoken title ends: its run of capitalised words ("The Lord of the Rings" keeps "of the"
+// because a capitalised word follows), stopping where the sentence goes on ("Oldboy changed Korean
+// cinema" is "Oldboy"). Said all in lowercase, its first few words.
+function titleRun(s: string) {
+  const words = s.trim().split(/\s+/);
+  if (!/^[A-Z0-9]/.test(words[0] ?? "")) return words.slice(0, 4).join(" ");
+  const out: string[] = [];
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    const joiner = /^(?:of|the|and|a|an|in|on|to|for|vs\.?|&)$/i.test(w) && /^[A-Z0-9]/.test(words[i + 1] ?? "");
+    if (i === 0 || /^[A-Z0-9]/.test(w) || joiner) out.push(w);
+    else break;
+  }
+  return out.join(" ");
+}
+
 export function candidatesFrom(text: string, max = 5): string[] {
   const src = text.replace(URL_RE, " ");
   const out: string[] = [];
+  // Said out loud (a reel's transcript): "a movie called Coherence", "the film is titled Oldboy",
+  // "you have to watch Interstellar". Spoken titles come first: a narrator naming the film is the
+  // surest sign there is.
+  const spoken: string[] = [];
+  for (const m of src.matchAll(/\b(?:movie|film|series|show|anime|documentary|k-?drama)\s+(?:is\s+)?(?:called|named|titled)\s+([^.,!?;\n]{2,50})/gi)) spoken.push(m[1]);
+  for (const m of src.matchAll(/\b(?:called|titled)\s+["“]?([A-Z0-9][^.,!?;\n"”]{1,50})/g)) spoken.push(m[1]);
+  for (const m of src.matchAll(/\b(?:watch|watched|watching|check out|recommend)\s+(?:the\s+(?:movie|film|show|series)\s+)?["“]?((?:[A-Z0-9][\w'’:-]*)(?:\s+(?:of|the|and|a|in|on|to|[A-Z0-9][\w'’:-]*)){0,6})/g)) spoken.push(m[1]);
   const add = (s: string | undefined) => {
     const c = clean(s ?? "");
     if (c.length < 2 || c.length > 70 || /^\d+$/.test(c)) return;
@@ -47,6 +70,7 @@ export function candidatesFrom(text: string, max = 5): string[] {
     if (!out.some((o) => o.toLowerCase() === c.toLowerCase())) out.push(c);
   };
   for (const m of src.matchAll(/["“”«»]([^"“”«»\n]{2,70})["“”«»]/g)) add(m[1]);
+  for (const s of spoken) add(titleRun(s));
   for (const m of src.matchAll(/(?:\b(?:movie|film|series|show|anime|title|watching|watch)\b|🎬|🎥|📽️?)\s*(?:name\s*)?[:：\-–—]\s*([^\n#|•@]{2,70})/giu)) add(m[1]?.split(/[.!?]\s/)[0]);
   for (const m of src.matchAll(/([A-Z0-9][^\n#()"“”]{0,60}?)\s*\((?:19|20)\d{2}\)/g)) add(m[1]);
   for (const m of src.matchAll(/#([\p{L}\p{N}_]{3,40})/gu)) {
@@ -83,4 +107,15 @@ export function matchScore(name: string, guess: string) {
   const words = new Set(g.split(" "));
   const shared = n.split(" ").filter((w) => words.has(w)).length;
   return Math.round((shared / Math.max(words.size, 1)) * 30);
+}
+
+// A search for several titles at once: "avengers, hulk, interstellar" is three searches. Only commas
+// (or semicolons, or new lines) split it, so a title with spaces ("the dark knight") stays one.
+export function splitTerms(q: string, max = 6): string[] {
+  const seen = new Set<string>();
+  return q
+    .split(/[,;\n]+/)
+    .map((t) => t.trim().slice(0, 100))
+    .filter((t) => t.length >= 2 && !seen.has(t.toLowerCase()) && seen.add(t.toLowerCase()))
+    .slice(0, max);
 }

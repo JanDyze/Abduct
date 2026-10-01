@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { candidatesFrom, firstUrl, matchScore, yearFrom } from "./extract";
+import { candidatesFrom, firstUrl, matchScore, splitTerms, yearFrom } from "./extract";
 
 describe("candidatesFrom", () => {
   it("takes a title in quotes first", () => {
@@ -32,6 +32,12 @@ describe("candidatesFrom", () => {
     expect(candidatesFrom("DUNE: PART TWO | Official Trailer 3")[0]).toBe("DUNE: PART TWO");
   });
 
+  it("hears a title named in a transcript", () => {
+    expect(candidatesFrom("Okay so this movie is called Coherence and it will mess with your head.")[0]).toBe("Coherence");
+    expect(candidatesFrom("If you liked that, you have to watch The Prestige by Christopher Nolan.")[0]).toBe("The Prestige");
+    expect(candidatesFrom("A film titled Oldboy changed Korean cinema forever.")[0]).toBe("Oldboy");
+  });
+
   it("finds nothing in a bare link", () => {
     expect(candidatesFrom("https://www.tiktok.com/@someone/video/7412345678901234567")).toEqual([]);
   });
@@ -57,5 +63,13 @@ describe("matchScore", () => {
     expect(matchScore("Interstellar", "interstellar")).toBe(100);
     expect(matchScore("The Dark Knight Rises", "The Dark Knight")).toBeGreaterThan(matchScore("Batman Begins", "The Dark Knight"));
     expect(matchScore("Up", "Project Hail Mary")).toBe(0);
+  });
+});
+
+describe("splitTerms", () => {
+  it("splits on commas, not spaces", () => {
+    expect(splitTerms("avengers, hulk, interstellar")).toEqual(["avengers", "hulk", "interstellar"]);
+    expect(splitTerms("the dark knight")).toEqual(["the dark knight"]);
+    expect(splitTerms("Up; Coco\nUp ,  ")).toEqual(["Up", "Coco"]);
   });
 });
