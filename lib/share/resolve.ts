@@ -10,7 +10,7 @@ const MAX_HTML = 400_000;
 
 export type Shared = { caption: string | null; author: string | null; site: string | null };
 
-function allowed(raw: string) {
+export function allowed(raw: string) {
   try {
     const u = new URL(raw);
     const host = u.hostname.toLowerCase();
@@ -20,7 +20,7 @@ function allowed(raw: string) {
   }
 }
 
-const siteOf = (u: URL) => {
+export const siteOf = (u: URL) => {
   const h = u.hostname.replace(/^(www|m|vm|vt|web)\./, "");
   if (h.includes("tiktok")) return "TikTok";
   if (h.includes("facebook") || h.includes("fb.")) return "Facebook";
@@ -31,7 +31,7 @@ const siteOf = (u: URL) => {
 };
 
 // Follows short links (vm.tiktok.com, fb.watch) one hop at a time, only to allowed hosts.
-async function resolve(u: URL): Promise<URL> {
+export async function resolve(u: URL): Promise<URL> {
   let current = u;
   for (let hop = 0; hop < 5; hop++) {
     const res = await fetch(current, { method: "HEAD", redirect: "manual", signal: AbortSignal.timeout(TIMEOUT), headers: { "User-Agent": "Mozilla/5.0" } }).catch(() => null);

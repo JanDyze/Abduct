@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 
 const BAR_AFTER = 200; // ms before the bar shows
 const OVERLAY_AFTER = 1000; // ms before the UFO overlay shows
-const GIVE_UP = 15000;
+const GIVE_UP = 10000;
 
 // When changing page takes a while, it shows: a thin orange bar along the top after a moment, then
 // the UFO beaming over a dimmed page ("Beaming you there…"). Pages with a skeleton
@@ -18,6 +18,9 @@ const addressOf = (path: string, query: string) => `${path}?${query}`;
 export function NavProgress() {
   const here = addressOf(usePathname(), useSearchParams().toString());
   const [nav, setNav] = useState<{ from: string; stage: Stage } | null>(null);
+  // Arrived (the address moved on): done with this one. Kept, it would show again on coming back
+  // to the page it started from (Back, or a redirect) and stick there.
+  if (nav && nav.from !== here) setNav(null);
   const stage = nav && nav.from === here ? nav.stage : "idle";
   const timers = useRef<number[]>([]);
 
@@ -35,9 +38,9 @@ export function NavProgress() {
       if (!a || a.target === "_blank" || a.hasAttribute("download")) return;
       const url = new URL(a.href, location.href);
       if (url.origin !== location.origin) return;
-      if (url.pathname === location.pathname && url.search === location.search) return; // same page (or just a #hash)
-      clear();
       const from = addressOf(location.pathname, new URLSearchParams(location.search).toString());
+      if (addressOf(url.pathname, url.searchParams.toString()) === from) return; // same page (or just a #hash)
+      clear();
       const to = (next: Stage, after: Stage) => setNav((n) => (n && n.stage === after ? { ...n, stage: next } : n));
       setNav({ from, stage: "waiting" });
       timers.current.push(
@@ -46,9 +49,18 @@ export function NavProgress() {
         window.setTimeout(() => setNav(null), GIVE_UP),
       );
     };
+    // Back/Forward, or the page coming back from the browser's cache: whatever was loading isn't.
+    const reset = () => {
+      clear();
+      setNav(null);
+    };
     document.addEventListener("click", onClick, true);
+    window.addEventListener("popstate", reset);
+    window.addEventListener("pageshow", reset);
     return () => {
       document.removeEventListener("click", onClick, true);
+      window.removeEventListener("popstate", reset);
+      window.removeEventListener("pageshow", reset);
       clear();
     };
   }, []);

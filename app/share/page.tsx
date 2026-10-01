@@ -80,6 +80,11 @@ export default async function SharePage({ searchParams }: PageProps<"/share">) {
   // transcript itself).
   const searchFor = (claude.length ? claude.map((t) => t.name) : guesses.filter((g) => g.length <= 50).slice(0, 3)).join(", ");
   const snippet = (shared?.caption ?? text ?? title).replace(/https?:\/\/\S+/g, "").trim();
+  // A reel link not yet listened to: listen to it straight away (lib/share/media.ts) unless Claude
+  // is already sure; then it's a button.
+  const linkToListen = canListen && url && !transcript && media !== "1" && ["TikTok", "YouTube", "Instagram", "Facebook"].includes(shared?.site ?? "") ? url : null;
+  const sure = Boolean(best) && claude[0]?.confidence === "high";
+  const linkParams = Object.fromEntries(Object.entries({ title, text, url: url ?? "" }).filter(([, v]) => v));
 
   return (
     <Screen back={{ href: "/", label: "Home" }} title="From your share">
@@ -102,6 +107,8 @@ export default async function SharePage({ searchParams }: PageProps<"/share">) {
         <SharedMedia params={Object.fromEntries(Object.entries({ title, text, url: url ?? "", media }).filter(([, v]) => v))} />
       ) : (
       <>
+      {linkToListen && !sure && <SharedMedia params={linkParams} link={linkToListen} />}
+
       <div className="mt-5">
         {best ? (
           <ShareBest result={best} listName={defaultList.name} why={bestWhy} />
@@ -131,7 +138,9 @@ export default async function SharePage({ searchParams }: PageProps<"/share">) {
         {searchFor ? <span className="truncate text-foreground">{searchFor}</span> : null}
       </Link>
 
-      {!best && canListen && !transcript && (
+      {linkToListen && sure && <SharedMedia params={linkParams} link={linkToListen} auto={false} />}
+
+      {!best && canListen && !transcript && !linkToListen && (
         <p className="mt-4 rounded-2xl border border-dashed px-4 py-3 text-sm text-muted-foreground">
           The post doesn&apos;t say which movie it is? Save the video to your phone, then share the video itself to Abduct: it&apos;ll
           listen to the clip for the title.

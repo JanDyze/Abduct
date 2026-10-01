@@ -2,6 +2,11 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.12.0 — Straight from the link
+
+- Share a reel's link from TikTok or YouTube (and, when they allow it, Instagram or Facebook) and Abduct listens to it right away, without you saving the video first. Already sure which title it is? Tap "Listen to the reel" to check.
+- The "Beaming you there…" overlay no longer gets stuck after a page has loaded.
+
 ## 0.11.1 — Every title in the reel
 
 - A reel that runs through several titles (a top 5, a list of picks) shows each of them, and "Search" looks for all of them at once.
