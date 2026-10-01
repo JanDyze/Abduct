@@ -53,7 +53,9 @@ function titleRun(s: string) {
   return out.join(" ");
 }
 
-export function candidatesFrom(text: string, max = 5): string[] {
+// `firstLine: false` skips the last resort (the text's first line): for a transcript, whose first
+// line is someone talking, not a title.
+export function candidatesFrom(text: string, max = 5, { firstLine = true }: { firstLine?: boolean } = {}): string[] {
   const src = text.replace(URL_RE, " ");
   const out: string[] = [];
   // Said out loud (a reel's transcript): "a movie called Coherence", "the film is titled Oldboy",
@@ -77,10 +79,10 @@ export function candidatesFrom(text: string, max = 5): string[] {
     if (/fyp|viral|foryou|trend/i.test(m[1]) || GENERIC.has(m[1].toLowerCase())) continue;
     add(fromHashtag(m[1]));
   }
-  const firstLine = src.split("\n").map((l) => l.replace(/[#@][\p{L}\p{N}_]+/gu, " ")).find((l) => clean(l).length >= 3);
-  if (firstLine) {
-    add(firstLine.replace(NOISE, " ").split(/\s[-–—|•:]\s|\s\/\s/)[0]);
-    add(firstLine.slice(0, 70));
+  const first = firstLine ? src.split("\n").map((l) => l.replace(/[#@][\p{L}\p{N}_]+/gu, " ")).find((l) => clean(l).length >= 3) : undefined;
+  if (first) {
+    add(first.replace(NOISE, " ").split(/\s[-–—|•:]\s|\s\/\s/)[0]);
+    add(first.slice(0, 70));
   }
   return out.slice(0, max);
 }

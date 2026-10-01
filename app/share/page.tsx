@@ -33,10 +33,11 @@ export default async function SharePage({ searchParams }: PageProps<"/share">) {
 
   const [lists, shared] = await Promise.all([getLists(user.id), url ? sharedLink(url) : null]);
   const defaultList = lists.find((l) => l.isDefault) ?? lists[0];
-  // what was said in the clip first: a narrator naming the movie beats a caption's hashtags
-  const pool = [transcript, title, text, shared?.caption].filter(Boolean).join("\n");
-  const guesses = candidatesFrom(pool);
-  const year = yearFrom(pool);
+  // What was said in the clip first (a narrator naming the movie beats a caption's hashtags), but
+  // only titles it names: someone talking is never searched as if it were a title.
+  const captionText = [title, text, shared?.caption].filter(Boolean).join("\n");
+  const guesses = [...new Set([...(transcript ? candidatesFrom(transcript, 5, { firstLine: false }) : []), ...candidatesFrom(captionText)])].slice(0, 5);
+  const year = yearFrom([transcript, captionText].join("\n"));
 
   // Each of the first few guesses searched; every hit scored by how well it matches its guess
   // (earlier guesses count for more), the year if one was named, and the catalog's own order.
@@ -69,7 +70,15 @@ export default async function SharePage({ searchParams }: PageProps<"/share">) {
   const ranked = [...scored.values()].sort((a, b) => b.score - a.score);
   const best = ranked[0] && ranked[0].score >= 30 ? ranked[0].r : null;
   const bestWhy = ranked[0]?.why;
-  const others = ranked.filter((x) => x.r !== best).slice(0, 9).map((x) => x.r);
+  // A reel about several titles (a ranking, recommendations): each one Claude named, after the first.
+  const alsoIn = claude.length > 1
+    ? [...new Map(claudeSearched.slice(1).map((o) => o?.results[0]).filter((r): r is CatalogResult => Boolean(r) && r !== best).map((r) => [`${r.source}:${r.sourceId}`, r])).values()]
+    : [];
+  const alsoKeys = new Set(alsoIn.map((r) => `${r.source}:${r.sourceId}`));
+  const others = ranked.filter((x) => x.r !== best && !alsoKeys.has(`${x.r.source}:${x.r.sourceId}`)).slice(0, 9).map((x) => x.r);
+  // What "Search" looks for: the titles found, comma-separated so each is searched (never the
+  // transcript itself).
+  const searchFor = (claude.length ? claude.map((t) => t.name) : guesses.filter((g) => g.length <= 50).slice(0, 3)).join(", ");
   const snippet = (shared?.caption ?? text ?? title).replace(/https?:\/\/\S+/g, "").trim();
 
   return (
@@ -103,14 +112,23 @@ export default async function SharePage({ searchParams }: PageProps<"/share">) {
         )}
       </div>
 
+      {alsoIn.length > 0 && (
+        <section aria-labelledby="also-heading" className="mt-6">
+          <h2 id="also-heading" className="mb-3 font-brand text-lg font-bold">
+            Also in this reel
+          </h2>
+          <CatalogGrid results={alsoIn} listName={defaultList.name} />
+        </section>
+      )}
+
       <Link
-        href={guesses[0] ? `/discover/search?${new URLSearchParams({ q: guesses[0] })}` : "/discover/search"}
+        href={searchFor ? `/discover/search?${new URLSearchParams({ q: searchFor })}` : "/discover/search"}
         transitionTypes={["nav-forward"]}
         className="mt-4 flex h-12 items-center gap-3 rounded-2xl border border-input bg-card px-3.5 text-base text-muted-foreground transition-colors hover:bg-muted"
       >
         <Search className="size-5 shrink-0" aria-hidden />
         {best ? "Not it? Search" : "Search"}
-        {guesses[0] ? <span className="truncate text-foreground">“{guesses[0]}”</span> : null}
+        {searchFor ? <span className="truncate text-foreground">{searchFor}</span> : null}
       </Link>
 
       {!best && canListen && !transcript && (

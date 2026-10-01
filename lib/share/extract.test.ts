@@ -38,6 +38,11 @@ describe("candidatesFrom", () => {
     expect(candidatesFrom("A film titled Oldboy changed Korean cinema forever.")[0]).toBe("Oldboy");
   });
 
+  it("doesn't take someone talking for a title", () => {
+    expect(candidatesFrom("So I was watching this the other day and honestly the ending broke me", 5, { firstLine: false })).toEqual([]);
+    expect(candidatesFrom("you have to watch Frieren after this", 5, { firstLine: false })[0]).toBe("Frieren");
+  });
+
   it("finds nothing in a bare link", () => {
     expect(candidatesFrom("https://www.tiktok.com/@someone/video/7412345678901234567")).toEqual([]);
   });

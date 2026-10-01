@@ -2,6 +2,11 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.11.1 — Every title in the reel
+
+- A reel that runs through several titles (a top 5, a list of picks) shows each of them, and "Search" looks for all of them at once.
+- Search after a share looks for the titles found, never the whole transcript.
+
 ## 0.11.0 — It knows that scene
 
 - Sharing a reel that never says its title? Abduct recognises the movie, series or anime from what happens and what's said in it (the characters, famous lines, the plot), in any language, and tells you what gave it away.
