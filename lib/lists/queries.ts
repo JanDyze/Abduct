@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, gt, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { listItems, lists, picks, ratings, titles } from "@/lib/db/schema";
 import { DEFAULT_COLOR, DEFAULT_ICON } from "@/lib/lists/icons";
@@ -105,6 +105,18 @@ export async function listsWithTitle(userId: string, titleId: string) {
     .from(listItems)
     .where(and(eq(listItems.userId, userId), eq(listItems.titleId, titleId)));
   return rows.map((r) => r.listId);
+}
+
+// For several titles at once: which of your lists each is on (title id → list ids).
+export async function listsForTitles(userId: string, titleIds: string[]) {
+  if (titleIds.length === 0) return {};
+  const rows = await db
+    .select({ titleId: listItems.titleId, listId: listItems.listId })
+    .from(listItems)
+    .where(and(eq(listItems.userId, userId), inArray(listItems.titleId, titleIds)));
+  const out: Record<string, string[]> = {};
+  for (const r of rows) (out[r.titleId] ??= []).push(r.listId);
+  return out;
 }
 
 const itemFields = {

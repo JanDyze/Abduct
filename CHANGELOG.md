@@ -2,6 +2,10 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.14.1 — Hold a title
+
+- Hold a title on one of your lists for its quick actions: mark it watched (or not), put it on your other lists or take it off them, move it to another list, or remove it from this one.
+
 ## 0.14.0 — Tidy with AI
 
 - My lists has a new Tidy with AI button: Claude looks at every list and everything on them and reorganizes them into lists that are easy to pick from. It can make new lists, rename, restyle, merge or delete them, move titles where they belong, and take off duplicates and junk. Watched stays watched.

@@ -10,7 +10,7 @@ import { ListItemsView } from "@/components/list-items-view";
 import { Screen } from "@/components/screen";
 import { requireUser } from "@/lib/auth";
 import { titleMeta } from "@/lib/format";
-import { getItems, getList } from "@/lib/lists/queries";
+import { getItems, getList, getLists, listsForTitles } from "@/lib/lists/queries";
 import { isKind } from "@/lib/titles/kinds";
 
 export async function generateMetadata({ params }: PageProps<"/lists/[id]">): Promise<Metadata> {
@@ -30,7 +30,8 @@ export default async function ListPage({ params, searchParams }: PageProps<"/lis
   const list = z.uuid().safeParse(id).success ? await getList(user.id, id) : null;
   if (!list) notFound();
 
-  const items = await getItems(user.id, list.id);
+  const [items, yours] = await Promise.all([getItems(user.id, list.id), getLists(user.id)]);
+  const onLists = await listsForTitles(user.id, items.map((i) => i.titleId));
   const kind = isKind(rawKind) ? rawKind : null;
   const watchedView = show === "watched";
   const toWatch = items.filter((i) => !i.watchedAt);
@@ -88,7 +89,18 @@ export default async function ListPage({ params, searchParams }: PageProps<"/lis
           )}
           <ListItemsView
             listId={list.id}
-            items={items.map((i) => ({ itemId: i.itemId, name: i.name, kind: i.kind, posterUrl: i.posterUrl, watched: Boolean(i.watchedAt), stars: i.stars, meta: titleMeta(i) }))}
+            items={items.map((i) => ({
+              itemId: i.itemId,
+              titleId: i.titleId,
+              name: i.name,
+              kind: i.kind,
+              posterUrl: i.posterUrl,
+              watched: Boolean(i.watchedAt),
+              stars: i.stars,
+              meta: titleMeta(i),
+              onLists: onLists[i.titleId] ?? [list.id],
+            }))}
+            lists={yours.map(({ id, name, icon, color }) => ({ id, name, icon, color }))}
             initialKind={kind}
             initialWatched={watchedView}
             save={reorderItems.bind(null, list.id)}
