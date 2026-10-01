@@ -71,7 +71,7 @@ export default async function DiscoverSearchPage({ searchParams }: PageProps<"/d
   return (
     <Screen back={{ href: "/discover", label: "Discover" }} title="Search">
       <DiscoverSearchBox initial={q}>
-      <SavedTitles saved={saved}>
+      <SavedTitles saved={saved} lists={lists.map(({ id, name, icon, color, isDefault }) => ({ id, name, icon, color, isDefault }))}>
 
       {!searching ? (
         <section aria-labelledby="genres-heading" className="mt-2">

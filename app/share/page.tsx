@@ -89,7 +89,7 @@ export default async function SharePage({ searchParams }: PageProps<"/share">) {
 
   return (
     <Screen back={{ href: "/", label: "Home" }} title="From your share">
-      <SavedTitles saved={saved}>
+      <SavedTitles saved={saved} lists={lists.map(({ id, name, icon, color, isDefault }) => ({ id, name, icon, color, isDefault }))}>
       <section className="rounded-2xl border bg-card/60 px-4 py-3 text-sm">
         <p className="text-xs text-muted-foreground">
           {shared?.site ?? "Shared"}

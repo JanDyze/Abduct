@@ -2,6 +2,12 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.13.0 — Hold it
+
+- Hold a poster in Discover, search or a share to choose which list it goes on, instead of your default. You can make a new list right there too. On a computer, right-click it.
+- My lists shows how you're doing across all your lists (to watch, watched, and a bar for how far along you are), with Pick for me one tap away. Each list has a bar in its color for how much of it you've watched.
+- Hold a list in My lists for its quick actions: open it, add to it, let the UFO pick from it, make it your default, make it public or private, edit or delete it.
+
 ## 0.12.1 — Already yours
 
 - Discover, search and shares show a check, not a +, on titles that are already on your lists. Tap the check to take one off.

@@ -188,6 +188,21 @@ export async function unwatchedCount(userId: string) {
   return row?.n ?? 0;
 }
 
+// Across all your lists, how many different titles there are and how many are still to watch (a
+// title on two lists counts once, and is still to watch while either says so), for My lists.
+export async function listStats(userId: string) {
+  const [row] = await db
+    .select({
+      toWatch: sql<number>`count(distinct ${listItems.titleId}) filter (where ${listItems.watchedAt} is null)::int`,
+      total: sql<number>`count(distinct ${listItems.titleId})::int`,
+    })
+    .from(listItems)
+    .where(eq(listItems.userId, userId));
+  const total = row?.total ?? 0;
+  const toWatch = row?.toWatch ?? 0;
+  return { total, toWatch, watched: total - toWatch };
+}
+
 // Titles the randomizer offered lately, so it can go easy on them.
 export async function recentPickTitleIds(userId: string, limit = 10) {
   const rows = await db

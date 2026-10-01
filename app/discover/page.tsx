@@ -70,7 +70,7 @@ export default async function DiscoverPage() {
 
   return (
     <Screen back={{ href: "/", label: "Home" }} title="Discover">
-      <SavedTitles saved={saved}>
+      <SavedTitles saved={saved} lists={lists.map(({ id, name, icon, color, isDefault }) => ({ id, name, icon, color, isDefault }))}>
       {/* Opens the search page, where the field takes the typing. */}
       <Link
         href="/discover/search"

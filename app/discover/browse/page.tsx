@@ -69,7 +69,7 @@ export default async function BrowsePage({ searchParams }: PageProps<"/discover/
   return (
     <Screen back={{ href: "/discover", label: "Discover" }} title={title} subtitle={KIND_PLURAL[kind]}>
       <BrowseShell kinds={kindLinks} chips={chipLinks}>
-        <SavedTitles saved={saved}>
+        <SavedTitles saved={saved} lists={lists.map(({ id, name, icon, color, isDefault }) => ({ id, name, icon, color, isDefault }))}>
         <p className="mt-4 mb-3 text-sm text-muted-foreground">
           {hint} Tap + to put one on {defaultList.name}.
         </p>
