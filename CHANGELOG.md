@@ -2,6 +2,10 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.11.0 — It knows that scene
+
+- Sharing a reel that never says its title? Abduct recognises the movie, series or anime from what happens and what's said in it (the characters, famous lines, the plot), in any language, and tells you what gave it away.
+
 ## 0.10.0 — Listen in
 
 - The caption doesn't say which movie it is? Save the reel, then share the video itself to Abduct: it listens to the clip, and when someone names the movie, it finds it.

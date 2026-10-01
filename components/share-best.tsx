@@ -9,7 +9,8 @@ const detailsHref = (r: CatalogResult) => `/titles/open?${new URLSearchParams({ 
 
 // The share page's best guess, big: its poster with the usual +, what it is, and a way to open it
 // (to put it on another list, or see where to watch it).
-export function ShareBest({ result: r, listName }: { result: CatalogResult; listName: string }) {
+// `why`: what gave it away, when Claude recognised it (lib/share/identify.ts).
+export function ShareBest({ result: r, listName, why }: { result: CatalogResult; listName: string; why?: string }) {
   const adds = useCatalogAdds(listName);
   return (
     <div className="flex gap-4 rounded-3xl border bg-card p-4">
@@ -21,7 +22,13 @@ export function ShareBest({ result: r, listName }: { result: CatalogResult; list
           {KIND_LABEL[r.kind]}
           {r.year ? ` · ${r.year}` : ""}
         </p>
-        {r.overview && <p className="mt-2 line-clamp-3 text-sm text-foreground/80">{r.overview}</p>}
+        {why ? (
+          <p className="mt-2 text-sm text-foreground/80">
+            <span className="text-primary">Recognised from</span> {why.replace(/^./, (c) => c.toLowerCase())}
+          </p>
+        ) : (
+          r.overview && <p className="mt-2 line-clamp-3 text-sm text-foreground/80">{r.overview}</p>
+        )}
         <Link href={detailsHref(r)} transitionTypes={["nav-forward"]} className="mt-3 inline-flex h-10 items-center rounded-xl border px-4 text-sm font-medium hover:bg-muted">
           Open it
         </Link>

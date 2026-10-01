@@ -8,6 +8,7 @@ import { SharedMedia } from "@/components/shared-media";
 import { requireUser } from "@/lib/auth";
 import { getLists } from "@/lib/lists/queries";
 import { candidatesFrom, firstUrl, matchScore, yearFrom } from "@/lib/share/extract";
+import { identifyTitle } from "@/lib/share/identify";
 import { sharedLink } from "@/lib/share/resolve";
 import { searchCatalog } from "@/lib/titles/catalog";
 import type { CatalogResult } from "@/lib/titles/normalize";
@@ -17,9 +18,10 @@ export const metadata: Metadata = { title: "Add from a share" };
 const str = (v: string | string[] | undefined) => (typeof v === "string" ? v.slice(0, 2000) : "");
 
 // Where a share lands (the manifest's share_target): a reel from TikTok, Facebook, Instagram or
-// YouTube, or any text naming a movie. It reads the link's caption, guesses the title from it
-// (lib/share/extract.ts), searches the catalogs, and offers the best match to add in one tap, with
-// the other likely ones below and a search to fix a wrong guess.
+// YouTube, or any text naming a movie. It reads the link's caption (and what's said in a shared
+// video), asks Claude which title it is (lib/share/identify.ts) alongside its own word-pattern
+// guesses (lib/share/extract.ts), searches the catalogs, and offers the best match to add in one
+// tap, with the other likely ones below and a search to fix a wrong guess.
 export default async function SharePage({ searchParams }: PageProps<"/share">) {
   const user = await requireUser();
   const params = await searchParams;
@@ -38,17 +40,35 @@ export default async function SharePage({ searchParams }: PageProps<"/share">) {
 
   // Each of the first few guesses searched; every hit scored by how well it matches its guess
   // (earlier guesses count for more), the year if one was named, and the catalog's own order.
-  const searched = media === "1" && canListen ? [] : await Promise.all(guesses.slice(0, 4).map((g) => searchCatalog(g, "all").catch(() => null)));
-  const scored = new Map<string, { r: CatalogResult; score: number }>();
+  // Claude's picks are searched in their own catalog (anime on AniList) and count for more,
+  // by how sure it is: it recognises clips that never say their title.
+  const waiting = media === "1" && canListen;
+  const [searched, identified] = waiting
+    ? [[], null]
+    : await Promise.all([
+        Promise.all(guesses.slice(0, 4).map((g) => searchCatalog(g, "all").catch(() => null))),
+        identifyTitle({ caption: shared?.caption, transcript, text: [title, text].filter(Boolean).join("\n"), site: shared?.site }),
+      ]);
+  const claude = identified ?? [];
+  const claudeSearched = await Promise.all(claude.map((t) => searchCatalog(t.name, t.kind).catch(() => null)));
+  const scored = new Map<string, { r: CatalogResult; score: number; why?: string }>();
+  const keep = (r: CatalogResult, score: number, why?: string) => {
+    const key = `${r.source}:${r.sourceId}`;
+    if ((scored.get(key)?.score ?? -Infinity) < score) scored.set(key, { r, score, why });
+  };
   searched.forEach((outcome, gi) =>
-    outcome?.results.slice(0, 12).forEach((r, ri) => {
-      const score = matchScore(r.name, guesses[gi]) + (4 - gi) * 8 + (year && r.year === year ? 20 : 0) - ri * 1.5;
-      const key = `${r.source}:${r.sourceId}`;
-      if ((scored.get(key)?.score ?? -Infinity) < score) scored.set(key, { r, score });
-    }),
+    outcome?.results.slice(0, 12).forEach((r, ri) => keep(r, matchScore(r.name, guesses[gi]) + (4 - gi) * 8 + (year && r.year === year ? 20 : 0) - ri * 1.5)),
   );
+  const SURE = { high: 90, medium: 60, low: 30 };
+  claudeSearched.forEach((outcome, ti) => {
+    const t = claude[ti];
+    outcome?.results.slice(0, 6).forEach((r, ri) =>
+      keep(r, SURE[t.confidence] + matchScore(r.name, t.name) + (t.year && r.year === t.year ? 25 : 0) - ri * 4 - ti * 12, t.why),
+    );
+  });
   const ranked = [...scored.values()].sort((a, b) => b.score - a.score);
   const best = ranked[0] && ranked[0].score >= 30 ? ranked[0].r : null;
+  const bestWhy = ranked[0]?.why;
   const others = ranked.filter((x) => x.r !== best).slice(0, 9).map((x) => x.r);
   const snippet = (shared?.caption ?? text ?? title).replace(/https?:\/\/\S+/g, "").trim();
 
@@ -75,7 +95,7 @@ export default async function SharePage({ searchParams }: PageProps<"/share">) {
       <>
       <div className="mt-5">
         {best ? (
-          <ShareBest result={best} listName={defaultList.name} />
+          <ShareBest result={best} listName={defaultList.name} why={bestWhy} />
         ) : (
           <p className="rounded-2xl border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
             Couldn&apos;t tell which title this is{guesses.length ? "" : ": the post didn't say"}. Search for it below.
