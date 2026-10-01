@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { CatalogGrid } from "@/components/catalog-grid";
+import { SavedTitles } from "@/components/catalog-poster";
 import { Screen } from "@/components/screen";
 import { ShareBest } from "@/components/share-best";
 import { SharedMedia } from "@/components/shared-media";
 import { requireUser } from "@/lib/auth";
-import { getLists } from "@/lib/lists/queries";
+import { getLists, savedTitles } from "@/lib/lists/queries";
 import { candidatesFrom, firstUrl, matchScore, yearFrom } from "@/lib/share/extract";
 import { identifyTitle } from "@/lib/share/identify";
 import { sharedLink } from "@/lib/share/resolve";
@@ -31,7 +32,7 @@ export default async function SharePage({ searchParams }: PageProps<"/share">) {
   const canListen = Boolean(process.env.ASSEMBLYAI_API_KEY);
   const url = str(params.url) || firstUrl(`${text}\n${title}`);
 
-  const [lists, shared] = await Promise.all([getLists(user.id), url ? sharedLink(url) : null]);
+  const [lists, saved, shared] = await Promise.all([getLists(user.id), savedTitles(user.id), url ? sharedLink(url) : null]);
   const defaultList = lists.find((l) => l.isDefault) ?? lists[0];
   // What was said in the clip first (a narrator naming the movie beats a caption's hashtags), but
   // only titles it names: someone talking is never searched as if it were a title.
@@ -88,6 +89,7 @@ export default async function SharePage({ searchParams }: PageProps<"/share">) {
 
   return (
     <Screen back={{ href: "/", label: "Home" }} title="From your share">
+      <SavedTitles saved={saved}>
       <section className="rounded-2xl border bg-card/60 px-4 py-3 text-sm">
         <p className="text-xs text-muted-foreground">
           {shared?.site ?? "Shared"}
@@ -158,6 +160,7 @@ export default async function SharePage({ searchParams }: PageProps<"/share">) {
       )}
       </>
       )}
+      </SavedTitles>
     </Screen>
   );
 }

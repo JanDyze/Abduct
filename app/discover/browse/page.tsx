@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { BrowseGrid } from "@/components/browse-grid";
 import { BrowseShell, type BrowseLink } from "@/components/browse-shell";
+import { SavedTitles } from "@/components/catalog-poster";
 import { Screen } from "@/components/screen";
 import { requireUser } from "@/lib/auth";
 import { viewerCountry } from "@/lib/country";
-import { getLists } from "@/lib/lists/queries";
+import { getLists, savedTitles } from "@/lib/lists/queries";
 import { browse, topicName, type BrowsePage } from "@/lib/titles/catalog";
 import { browseHref, genreOf, GENRES, TOPIC_CHIPS, topicChipOf, type Feed } from "@/lib/titles/genres";
 import { isKind, KIND_PLURAL, KINDS, type Kind } from "@/lib/titles/kinds";
@@ -37,8 +38,9 @@ export default async function BrowsePage({ searchParams }: PageProps<"/discover/
   if ((feed === "genre" && !genre) || (feed === "topic" && !topic) || ((feed === "country" || feed === "topic") && kind === "anime")) feed = "trending";
 
   const chipTopic = feed === "topic" ? topicChipOf(topic) : null;
-  const [lists, country, keyword] = await Promise.all([
+  const [lists, saved, country, keyword] = await Promise.all([
     getLists(user.id),
+    savedTitles(user.id),
     viewerCountry(),
     feed === "topic" && !chipTopic ? topicName(topic!) : null,
   ]);
@@ -67,6 +69,7 @@ export default async function BrowsePage({ searchParams }: PageProps<"/discover/
   return (
     <Screen back={{ href: "/discover", label: "Discover" }} title={title} subtitle={KIND_PLURAL[kind]}>
       <BrowseShell kinds={kindLinks} chips={chipLinks}>
+        <SavedTitles saved={saved}>
         <p className="mt-4 mb-3 text-sm text-muted-foreground">
           {hint} Tap + to put one on {defaultList.name}.
         </p>
@@ -86,6 +89,7 @@ export default async function BrowsePage({ searchParams }: PageProps<"/discover/
             Couldn&apos;t reach the catalog. Try again in a moment.
           </p>
         )}
+        </SavedTitles>
       </BrowseShell>
     </Screen>
   );

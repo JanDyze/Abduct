@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Globe, Search, Star } from "lucide-react";
+import { SavedTitles } from "@/components/catalog-poster";
 import { Poster } from "@/components/poster";
 import { PublicListCard } from "@/components/public-list-card";
 import { Screen } from "@/components/screen";
@@ -8,7 +9,7 @@ import { GenreChips } from "@/components/genre-chips";
 import { Trending } from "@/components/trending";
 import { requireUser } from "@/lib/auth";
 import { viewerCountry } from "@/lib/country";
-import { getLists } from "@/lib/lists/queries";
+import { getLists, savedTitles } from "@/lib/lists/queries";
 import { mostLiked, newestLists, popularLists } from "@/lib/social/discover";
 import { browse, trending } from "@/lib/titles/catalog";
 import { browseHref } from "@/lib/titles/genres";
@@ -50,8 +51,9 @@ const seeAll = (feed: "trending" | "country") => ({
 export default async function DiscoverPage() {
   const user = await requireUser();
   const country = await viewerCountry();
-  const [lists, movies, series, anime, hereMovies, hereSeries, loved, popular, fresh] = await Promise.all([
+  const [lists, saved, movies, series, anime, hereMovies, hereSeries, loved, popular, fresh] = await Promise.all([
     getLists(user.id),
+    savedTitles(user.id),
     trending("movie"),
     trending("series"),
     trending("anime"),
@@ -68,6 +70,7 @@ export default async function DiscoverPage() {
 
   return (
     <Screen back={{ href: "/", label: "Home" }} title="Discover">
+      <SavedTitles saved={saved}>
       {/* Opens the search page, where the field takes the typing. */}
       <Link
         href="/discover/search"
@@ -137,6 +140,7 @@ export default async function DiscoverPage() {
           </div>
         </Section>
       )}
+      </SavedTitles>
     </Screen>
   );
 }

@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { listItems, lists, picks, ratings, titles } from "@/lib/db/schema";
 import { DEFAULT_COLOR, DEFAULT_ICON } from "@/lib/lists/icons";
@@ -81,6 +81,21 @@ export async function firstItemOf(userId: string, titleId: string) {
     .orderBy(asc(lists.position))
     .limit(1);
   return row?.id ?? null;
+}
+
+// Every catalog title on your lists ("tmdb:603" → its list item), so Discover's posters show a
+// check, not a +, for what you already have. The item on your default list if it's there, as that's
+// where + adds to.
+export async function savedTitles(userId: string): Promise<Record<string, string>> {
+  const rows = await db
+    .select({ source: titles.source, sourceId: titles.sourceId, itemId: listItems.id, isDefault: lists.isDefault })
+    .from(listItems)
+    .innerJoin(titles, eq(titles.id, listItems.titleId))
+    .innerJoin(lists, eq(lists.id, listItems.listId))
+    .where(and(eq(listItems.userId, userId), ne(titles.source, "manual")))
+    .orderBy(asc(lists.isDefault));
+  // default-list rows come last, so they win
+  return Object.fromEntries(rows.map((r) => [`${r.source}:${r.sourceId}`, r.itemId]));
 }
 
 // Which of your lists a title is on (a title can be on several).

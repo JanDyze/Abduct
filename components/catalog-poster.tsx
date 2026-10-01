@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import Link from "next/link";
 import { Check, Plus } from "lucide-react";
 import { addTrendingTitle, undoAdd } from "@/app/add/actions";
@@ -15,13 +15,29 @@ import { sound } from "@/lib/sound";
 const detailsHref = (r: CatalogResult) => `/titles/open?${new URLSearchParams({ source: r.source, id: r.sourceId })}`;
 const keyOf = (r: CatalogResult) => `${r.source}:${r.sourceId}`;
 
-type AddState = "adding" | "removing" | "failed" | { itemId: string };
+// `saved`: already on your lists before now, so no "Added · Undo" under it
+type AddState = "adding" | "removing" | "failed" | { itemId: string; saved?: boolean };
+
+// What's already on your lists ("tmdb:603" → its list item, from savedTitles), for a page's posters
+// to start with a check instead of a +.
+const Saved = createContext<Record<string, string>>({});
+
+export function SavedTitles({ saved, children }: { saved: Record<string, string>; children: React.ReactNode }) {
+  return <Saved.Provider value={saved}>{children}</Saved.Provider>;
+}
 
 // Adding catalog titles to your default list from a row or grid of posters, with Undo. One per
 // row or grid: it owns the undo toast (render `toast`).
 export function useCatalogAdds(listName: string) {
-  const [added, setAdded] = useState<Record<string, AddState>>({});
+  const saved = useContext(Saved);
+  // null: taken off here, whatever `saved` said
+  const [added, setAdded] = useState<Record<string, AddState | null>>({});
   const toast = useUndoToast();
+  const stateOf = (r: CatalogResult): AddState | undefined => {
+    const key = keyOf(r);
+    if (key in added) return added[key] ?? undefined;
+    return saved[key] ? { itemId: saved[key], saved: true } : undefined;
+  };
 
   // Added by mistake: tapping the check (or Undo) takes it off your list again.
   const undo = async (r: CatalogResult, itemId: string) => {
@@ -31,15 +47,14 @@ export function useCatalogAdds(listName: string) {
     const res = await undoAdd(itemId);
     setAdded((a) => {
       const next = { ...a };
-      if (res.error) next[keyOf(r)] = { itemId };
-      else delete next[keyOf(r)];
+      next[keyOf(r)] = res.error ? { itemId } : null;
       return next;
     });
   };
 
   // `poster`: the one that was tapped, for the UFO to abduct
   const toggle = async (r: CatalogResult, poster?: Element | null) => {
-    const state = added[keyOf(r)];
+    const state = stateOf(r);
     if (typeof state === "object") return undo(r, state.itemId);
     if (state === "adding") return;
     setAdded((a) => ({ ...a, [keyOf(r)]: "adding" }));
@@ -50,7 +65,7 @@ export function useCatalogAdds(listName: string) {
     if (res.ok && !res.already) toast.show(`Added ${r.name} to ${listName}`, () => undo(r, res.itemId));
   };
 
-  return { stateOf: (r: CatalogResult) => added[keyOf(r)], toggle, toast: toast.node, listName };
+  return { stateOf, toggle, toast: toast.node, listName };
 }
 
 // A poster that opens the title's page, with a + that puts it on your default list (a check once
@@ -70,7 +85,7 @@ export function CatalogPoster({ result: r, adds, className }: { result: CatalogR
           type="button"
           onClick={(e) => adds.toggle(r, e.currentTarget.parentElement?.querySelector("[data-poster]"))}
           disabled={busy}
-          aria-label={done ? `Take ${r.name} off ${adds.listName}` : `Add ${r.name} to ${adds.listName}`}
+          aria-label={done ? `Take ${r.name} off ${state.saved ? "your list" : adds.listName}` : `Add ${r.name} to ${adds.listName}`}
           className={cn(
             "absolute right-1.5 bottom-1.5 flex size-9 items-center justify-center rounded-full shadow-lg shadow-black/50 transition-[transform,background-color] active:scale-90",
             lit ? "bg-card text-primary" : "bg-primary text-primary-foreground",
@@ -81,7 +96,7 @@ export function CatalogPoster({ result: r, adds, className }: { result: CatalogR
       </div>
       <span className="mt-1.5 line-clamp-2 text-xs leading-snug font-medium">{r.name}</span>
       {state === "failed" && <span className="text-xs text-destructive">Couldn&apos;t add. Try again.</span>}
-      {done && (
+      {done && !state.saved && (
         <button type="button" onClick={() => adds.toggle(r)} className="text-xs font-medium text-primary hover:underline">
           Added · Undo
         </button>

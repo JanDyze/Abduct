@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CatalogGrid } from "@/components/catalog-grid";
+import { SavedTitles } from "@/components/catalog-poster";
 import { DiscoverSearchBox } from "@/components/discover-search-box";
 import { GenreChips } from "@/components/genre-chips";
 import { Screen } from "@/components/screen";
 import { requireUser } from "@/lib/auth";
-import { getLists } from "@/lib/lists/queries";
+import { getLists, savedTitles } from "@/lib/lists/queries";
 import { searchCatalog, searchTopics, type SearchOutcome, type Topic } from "@/lib/titles/catalog";
 import { splitTerms } from "@/lib/share/extract";
 import { browseHref, GENRES, TOPIC_CHIPS } from "@/lib/titles/genres";
@@ -56,8 +57,9 @@ export default async function DiscoverSearchPage({ searchParams }: PageProps<"/d
   const several = terms.length > 1;
   const searching = terms.length > 0;
 
-  const [lists, outcome, topics, each] = await Promise.all([
+  const [lists, saved, outcome, topics, each] = await Promise.all([
     getLists(user.id),
+    savedTitles(user.id),
     searching && !several ? searchCatalog(terms[0], "all") : Promise.resolve<SearchOutcome | null>(null),
     searching && !several ? searchTopics(terms[0]).catch((e) => (console.error("Topic search failed:", e), [] as Topic[])) : Promise.resolve([] as Topic[]),
     several ? Promise.all(terms.map((t) => searchCatalog(t, "all").catch(() => null))) : Promise.resolve([]),
@@ -69,6 +71,7 @@ export default async function DiscoverSearchPage({ searchParams }: PageProps<"/d
   return (
     <Screen back={{ href: "/discover", label: "Discover" }} title="Search">
       <DiscoverSearchBox initial={q}>
+      <SavedTitles saved={saved}>
 
       {!searching ? (
         <section aria-labelledby="genres-heading" className="mt-2">
@@ -142,6 +145,7 @@ export default async function DiscoverSearchPage({ searchParams }: PageProps<"/d
           </section>
         </>
       )}
+      </SavedTitles>
       </DiscoverSearchBox>
     </Screen>
   );
