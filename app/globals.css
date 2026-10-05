@@ -261,13 +261,22 @@
 }
 .animate-beam-down { animation: beam-down 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
+/* The movie's skip badge: pops up where you double-tapped, then fades. */
+@keyframes skip-pop {
+  0% { opacity: 0; scale: 0.8; }
+  20% { opacity: 1; scale: 1.05; }
+  60% { opacity: 1; scale: 1; }
+  100% { opacity: 0; scale: 1; }
+}
+.animate-skip { animation: skip-pop 700ms ease-out both; }
+
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),
   ::view-transition-new(*) {
     animation: none !important;
   }
-  .animate-rise, .animate-fade-in, .animate-hover, .animate-beam, .animate-beam-down, .animate-beam-arrive, .animate-ufo-hop, .skeleton, .nav-bar { animation: none; }
+  .animate-rise, .animate-fade-in, .animate-hover, .animate-beam, .animate-beam-down, .animate-beam-arrive, .animate-ufo-hop, .animate-skip, .skeleton, .nav-bar { animation: none; }
 }
 
 /* ---------- Feel like an app, not a web page ---------- */

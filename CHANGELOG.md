@@ -2,6 +2,11 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.19.0 — Lights down
+
+- Play movie opens Abduct's own cinema: full screen right away (sideways, on phones that allow it), the UFO beaming the movie in, and a bar with the title, full screen and an X to close. Back closes it too, and your screen stays on while you watch.
+- Players that speak to Abduct get Abduct's own controls: tap to show them, play and pause, a scrubber, skip 10 seconds (or double-tap a side), mute.
+
 ## 0.18.0 — Showtime
 
 - Play movies right in Abduct: tap Play movie on a movie's page and it starts there, full screen if you like.
