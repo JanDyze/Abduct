@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Star, Users } from "lucide-react";
 import { z } from "zod";
 import { OthersComments } from "@/components/comments";
+import { PlayMovie } from "@/components/play-movie";
 import { Poster } from "@/components/poster";
 import { TrailerButton } from "@/components/trailer-button";
 import { Screen } from "@/components/screen";
@@ -15,6 +16,7 @@ import { requireUser } from "@/lib/auth";
 import { titleMeta } from "@/lib/format";
 import { firstItemOf, getLists } from "@/lib/lists/queries";
 import { communityRating, getTitle, publicComments } from "@/lib/social/discover";
+import { playableMovieId, playerEnabled } from "@/lib/titles/player";
 
 async function load(params: PageProps<"/titles/[id]">["params"]) {
   const { id } = await params;
@@ -43,6 +45,7 @@ export default async function TitlePage({ params, searchParams }: PageProps<"/ti
   // Opened from Add a title, Add goes to the list chosen there; otherwise to your default.
   const target = lists.find((l) => l.id === listParam) ?? lists.find((l) => l.isDefault) ?? lists[0];
   const back = from === "add" ? { href: `/add?list=${target.id}`, label: "Search" } : { href: "/discover", label: "Discover" };
+  const movieId = playerEnabled() ? playableMovieId(title.source, title.sourceId) : null;
 
   return (
     <Screen back={back} title={back.label} className="pt-0">
@@ -87,6 +90,8 @@ export default async function TitlePage({ params, searchParams }: PageProps<"/ti
           lists={lists.map(({ id, name, icon, color }) => ({ id, name, icon, color }))}
         />
       </div>
+
+      {movieId && <PlayMovie movieId={movieId} name={title.name} className="animate-rise mt-3" />}
 
       <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
         <Users className="size-4" aria-hidden />

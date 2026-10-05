@@ -2,6 +2,10 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.18.0 — Showtime
+
+- Play movies right in Abduct: tap Play movie on a movie's page and it starts there, full screen if you like.
+
 ## 0.17.1 — Beaming you in
 
 - Opening the app shows the UFO at once, beaming up a poster while Abduct loads, instead of a blank screen with the logo.

@@ -8,6 +8,7 @@ import { removeItem } from "@/app/lists/actions";
 import { Comments, OthersComments } from "@/components/comments";
 import { ConfirmDelete } from "@/components/confirm-delete";
 import { ListToggles } from "@/components/list-toggles";
+import { PlayMovie } from "@/components/play-movie";
 import { Poster } from "@/components/poster";
 import { TrailerButton } from "@/components/trailer-button";
 import { Screen } from "@/components/screen";
@@ -19,6 +20,7 @@ import { titleMeta } from "@/lib/format";
 import { getItem, getLists, listsWithTitle } from "@/lib/lists/queries";
 import { publicComments } from "@/lib/social/discover";
 import { getComments } from "@/lib/titles/feedback";
+import { playableMovieId, playerEnabled } from "@/lib/titles/player";
 
 async function load(params: PageProps<"/items/[id]">["params"]) {
   const { id } = await params;
@@ -43,6 +45,7 @@ export default async function ItemPage({ params }: PageProps<"/items/[id]">) {
     listsWithTitle(user.id, item.titleId),
     publicComments(item.titleId, user.id),
   ]);
+  const movieId = playerEnabled() ? playableMovieId(item.source, item.sourceId) : null;
 
   return (
     <Screen back={{ href: `/lists/${item.listId}`, label: item.listName }} title={item.listName} className="pt-0">
@@ -79,6 +82,7 @@ export default async function ItemPage({ params }: PageProps<"/items/[id]">) {
       )}
 
       <WatchedToggle itemId={item.itemId} watched={Boolean(item.watchedAt)} className="animate-rise mt-5" />
+      {movieId && <PlayMovie movieId={movieId} name={item.name} className="animate-rise mt-3" />}
 
       {item.source !== "manual" && (
         <Suspense fallback={<WhereToWatchLoading />}>
