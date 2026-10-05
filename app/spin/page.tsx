@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Randomizer, type SpinItem } from "@/components/randomizer";
 import { Screen } from "@/components/screen";
 import { requireUser } from "@/lib/auth";
+import { myServices } from "@/lib/my-services";
 import { getLists, recentPickTitleIds, spinItems } from "@/lib/lists/queries";
 
 export const metadata: Metadata = { title: "Pick for me" };
@@ -11,12 +12,14 @@ export const metadata: Metadata = { title: "Pick for me" };
 export default async function SpinPage({ searchParams }: PageProps<"/spin">) {
   const { list } = await searchParams;
   const user = await requireUser();
-  const [lists, rows, recent] = await Promise.all([getLists(user.id), spinItems(user.id), recentPickTitleIds(user.id)]);
+  const [lists, rows, recent, services] = await Promise.all([getLists(user.id), spinItems(user.id), recentPickTitleIds(user.id), myServices()]);
   const from = lists.find((l) => l.id === list);
 
   const items: SpinItem[] = rows.map((r) => ({
     itemId: r.itemId,
     titleId: r.titleId,
+    source: r.source,
+    sourceId: r.sourceId,
     listId: r.listId,
     kind: r.kind,
     name: r.name,
@@ -39,6 +42,7 @@ export default async function SpinPage({ searchParams }: PageProps<"/spin">) {
         lists={lists.map(({ id, name, icon, color }) => ({ id, name, icon, color }))}
         recent={recent}
         initialList={from?.id ?? null}
+        hasServices={services.length > 0}
       />
     </Screen>
   );

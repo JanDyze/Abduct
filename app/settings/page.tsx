@@ -4,6 +4,7 @@ import { ChartColumn, ChevronRight, LogOut } from "lucide-react";
 import { saveAccount, signOut } from "@/app/login/actions";
 import { CountryPicker } from "@/components/country-picker";
 import { NameForm } from "@/components/name-form";
+import { ServicesPicker } from "@/components/services-picker";
 import { Screen } from "@/components/screen";
 import { SoundToggle } from "@/components/sound-toggle";
 import { GoogleMark } from "@/components/sign-in-marks";
@@ -11,7 +12,9 @@ import { isAdmin } from "@/lib/admin";
 import { requireUser } from "@/lib/auth";
 import { APP_VERSION } from "@/lib/changelog";
 import { countryName, detectedCountry, viewerCountry } from "@/lib/country";
+import { myServices } from "@/lib/my-services";
 import { ensureProfile } from "@/lib/social/profiles";
+import { servicesIn } from "@/lib/titles/providers";
 import { COUNTRY_CODES } from "@/lib/timezone-countries";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -20,7 +23,8 @@ export const metadata: Metadata = { title: "Settings" };
 // (TMDB asks apps using its API to say so).
 export default async function SettingsPage() {
   const user = await requireUser();
-  const [name, country, detected] = await Promise.all([ensureProfile(user), viewerCountry(), detectedCountry()]);
+  const [name, country, detected, mine] = await Promise.all([ensureProfile(user), viewerCountry(), detectedCountry(), myServices()]);
+  const services = await servicesIn(country.code);
   const countries = COUNTRY_CODES.map((code) => ({ code, name: countryName(code) })).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
@@ -59,6 +63,16 @@ export default async function SettingsPage() {
         </h2>
         <p className="mt-0.5 mb-3 text-sm text-muted-foreground">For what&apos;s popular where you are, and where to watch.</p>
         <CountryPicker current={country.chosen ? country.code : null} detected={detected.name} countries={countries} />
+      </section>
+
+      <section id="services" aria-labelledby="services-heading" className="mt-4 scroll-mt-24 rounded-2xl border bg-card p-4">
+        <h2 id="services-heading" className="font-medium">
+          My services
+        </h2>
+        <p className="mt-0.5 mb-3 text-sm text-muted-foreground">
+          The ones you have in {country.name}. Where to watch puts them first, and Pick for me can stick to what you can play right now.
+        </p>
+        <ServicesPicker services={services} initial={mine} />
       </section>
 
       {isAdmin(user) && (

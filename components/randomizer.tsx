@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { Check, Eye, RotateCcw, Star } from "lucide-react";
+import { Check, Eye, Play, RotateCcw, Star } from "lucide-react";
 import { acceptPick, recordPick } from "@/app/spin/actions";
 import { setWatched } from "@/app/lists/actions";
 import { ListIcon } from "@/components/list-icon";
@@ -12,13 +12,17 @@ import { Picker } from "@/components/ui/picker";
 import type { ListOption } from "@/lib/lists/icons";
 import { ShipBeam } from "@/components/ship-beam";
 import { countTitles, titleMeta } from "@/lib/format";
-import { DEFAULT_FILTERS, filterPool, genresOf, pick, reel, TIME_OPTIONS, type Candidate, type Filters, type TimeOption } from "@/lib/randomizer/pick";
+import { DEFAULT_FILTERS, filterPool, genresOf, pick, reel, TIME_OPTIONS, type Candidate, type Filters, type TimeOption, type WatchOption } from "@/lib/randomizer/pick";
+import { serviceLink } from "@/lib/titles/services";
+import { TrailerButton } from "@/components/trailer-button";
 import { KIND_PLURAL, KINDS, type Kind } from "@/lib/titles/kinds";
 import { cn } from "@/lib/utils";
 import { sound } from "@/lib/sound";
 
 export type SpinItem = Candidate & {
   listId: string;
+  source: string;
+  sourceId: string;
   name: string;
   year: number | null;
   posterUrl: string | null;
@@ -61,7 +65,29 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 }
 
 type Saved = { listId?: string; filters?: Partial<Filters> };
-type Props = { items: SpinItem[]; lists: ListOption[]; recent: string[]; initialList: string | null };
+type Props = { items: SpinItem[]; lists: ListOption[]; recent: string[]; initialList: string | null; hasServices: boolean };
+
+type Availability = { free: string[]; yours: string[] };
+const keyOf = (i: { source: string; sourceId: string }) => `${i.source}:${i.sourceId}`;
+const playable = (a: Availability | undefined, watch: WatchOption) => Boolean(a && (watch === "free" ? a.free.length : a.free.length || a.yours.length));
+
+// Where some titles can be played (app/api/availability), sixty at a time.
+async function fetchAvailability(items: SpinItem[]): Promise<Record<string, Availability>> {
+  const out: Record<string, Availability> = {};
+  for (let i = 0; i < items.length; i += 60) {
+    const res = await fetch("/api/availability", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ titles: items.slice(i, i + 60).map(({ source, sourceId }) => ({ source, sourceId })) }),
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.availability) throw new Error("availability");
+    Object.assign(out, json.availability);
+  }
+  // every title asked about gets an answer, so none is asked about again and again
+  for (const i of items) out[keyOf(i)] ??= { free: [], yours: [] };
+  return out;
+}
 
 // The filters saved on this device, read once per visit to the page (the server has none).
 const noSubscription = () => () => {};
@@ -99,7 +125,7 @@ export function Randomizer(props: Props) {
   return <Spinner key={raw === null ? "defaults" : "saved"} {...props} saved={parseSaved(raw)} />;
 }
 
-function Spinner({ items: initialItems, lists, recent: initialRecent, initialList, saved }: Props & { saved: Saved }) {
+function Spinner({ items: initialItems, lists, recent: initialRecent, initialList, hasServices, saved }: Props & { saved: Saved }) {
   const [items, setItems] = useState(initialItems);
   // A list named in the address wins over the remembered one.
   const [listId, setListId] = useState<string>(
@@ -124,7 +150,27 @@ function Spinner({ items: initialItems, lists, recent: initialRecent, initialLis
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   const inList = useMemo(() => (listId === "all" ? items : items.filter((i) => i.listId === listId)), [items, listId]);
-  const pool = useMemo(() => filterPool(inList, filters), [inList, filters]);
+  const [availability, setAvailability] = useState<Record<string, Availability>>({});
+  const [checkFailed, setCheckFailed] = useState(false);
+  const fitting = useMemo(() => filterPool(inList, filters), [inList, filters]);
+  const unchecked = useMemo(() => (filters.watch === "any" ? [] : fitting.filter((c) => !(keyOf(c) in availability))), [fitting, filters.watch, availability]);
+  const checking = unchecked.length > 0 && !checkFailed;
+  const pool = useMemo(
+    () => (filters.watch === "any" ? fitting : fitting.filter((c) => playable(availability[keyOf(c)], filters.watch))),
+    [fitting, filters.watch, availability],
+  );
+
+  // "Can play now" and "Free" need to know where each title is on; asked for as they're needed.
+  useEffect(() => {
+    if (unchecked.length === 0 || checkFailed) return;
+    let stale = false;
+    fetchAvailability(unchecked)
+      .then((found) => !stale && setAvailability((a) => ({ ...a, ...found })))
+      .catch(() => !stale && setCheckFailed(true));
+    return () => {
+      stale = true;
+    };
+  }, [unchecked, checkFailed]);
   const open = pool.filter((c) => !excluded.includes(c.titleId));
   const kindsHere = KINDS.filter((k) => inList.some((i) => i.kind === k));
   const genres = useMemo(() => genresOf(inList.filter((i) => filters.includeWatched || !i.watched)), [inList, filters.includeWatched]);
@@ -137,6 +183,10 @@ function Spinner({ items: initialItems, lists, recent: initialRecent, initialLis
 
   const land = (c: SpinItem) => {
     sound.land();
+    if (!(keyOf(c) in availability) && c.source !== "manual")
+      fetchAvailability([c])
+        .then((found) => setAvailability((a) => ({ ...a, ...found })))
+        .catch(() => {});
     setShown(c);
     setChosen(c);
     setPhase("landed");
@@ -269,6 +319,10 @@ function Spinner({ items: initialItems, lists, recent: initialRecent, initialLis
             </p>
           )}
           {chosen.overview && <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-foreground/80">{chosen.overview}</p>}
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+            <PlayOn item={chosen} availability={availability[keyOf(chosen)]} />
+            <TrailerButton source={chosen.source} sourceId={chosen.sourceId} name={chosen.name} className="h-9 px-3.5" />
+          </div>
 
           {phase === "landed" ? (
             <div className="mt-6 flex w-full flex-col gap-2">
@@ -313,12 +367,16 @@ function Spinner({ items: initialItems, lists, recent: initialRecent, initialLis
         <div className="mt-2 flex flex-col gap-5">
           <div className="flex flex-col items-center gap-3">
             <p className="text-sm text-muted-foreground" aria-live="polite">
-              {emptyNote ?? (pool.length === 0 ? "Nothing fits these filters." : `${countTitles(open.length)} in the running`)}
+              {checking
+                ? "Checking where you can watch them…"
+                : checkFailed && filters.watch !== "any"
+                  ? "Couldn't check where to watch. Try again later, or pick Anywhere."
+                  : (emptyNote ?? (pool.length === 0 ? "Nothing fits these filters." : `${countTitles(open.length)} in the running`))}
             </p>
             <button
               type="button"
               onClick={() => spin()}
-              disabled={spinning || open.length === 0}
+              disabled={spinning || checking || open.length === 0}
               className="flex h-14 w-full items-center justify-center rounded-2xl bg-primary text-lg font-semibold text-primary-foreground shadow-[0_8px_30px_-6px] shadow-primary/40 transition-[transform,opacity] active:scale-[0.98] disabled:opacity-50"
             >
               {spinning ? "Scanning…" : "Pick for me"}
@@ -357,6 +415,27 @@ function Spinner({ items: initialItems, lists, recent: initialRecent, initialLis
                 ))}
               </Row>
             )}
+            <Row label="Where">
+              <Chip active={filters.watch === "any"} onClick={() => update({ watch: "any" })}>
+                Anywhere
+              </Chip>
+              <Chip active={filters.watch === "now"} onClick={() => update({ watch: "now" })}>
+                {hasServices ? "Can play now" : "Free to play"}
+              </Chip>
+              {hasServices && (
+                <Chip active={filters.watch === "free"} onClick={() => update({ watch: "free" })}>
+                  Free only
+                </Chip>
+              )}
+            </Row>
+            {filters.watch !== "any" && !hasServices && (
+              <p className="-mt-1 text-xs text-muted-foreground">
+                <Link href="/settings#services" className="font-medium text-primary underline-offset-4 hover:underline">
+                  Pick your services
+                </Link>{" "}
+                to include what&apos;s on them too.
+              </p>
+            )}
             <Row label="Time">
               {(Object.keys(TIME_OPTIONS) as TimeOption[]).map((t) => (
                 <Chip key={t} active={filters.time === t} onClick={() => update({ time: t })}>
@@ -388,5 +467,26 @@ function Spinner({ items: initialItems, lists, recent: initialRecent, initialLis
         </div>
       )}
     </div>
+  );
+}
+
+// Where the pick can be played right now: a service you have first, else a free one, opening the
+// title in that service's app. Nothing while it's still being looked up, or if it's neither.
+function PlayOn({ item, availability }: { item: SpinItem; availability: Availability | undefined }) {
+  if (!availability) return null;
+  const yours = availability.yours[0];
+  const free = availability.free[0];
+  const service = yours ?? free;
+  if (!service) return null;
+  return (
+    <a
+      href={serviceLink(service, item.name, `/items/${item.itemId}`)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex h-9 items-center gap-1.5 rounded-xl bg-primary/15 px-3.5 text-sm font-semibold text-primary hover:bg-primary/25 active:scale-95"
+    >
+      <Play className="size-4 fill-current" aria-hidden />
+      {yours ? `On ${yours}` : `Free on ${free}`}
+    </a>
   );
 }

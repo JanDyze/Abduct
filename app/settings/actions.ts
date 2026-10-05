@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { requireUser } from "@/lib/auth";
 import { COUNTRY_COOKIE } from "@/lib/country";
+import { parseServices, SERVICES_COOKIE } from "@/lib/my-services";
 import { cleanDisplayName, MAX_DISPLAY_NAME } from "@/lib/social/name";
 import { setDisplayName } from "@/lib/social/profiles";
 import { COUNTRY_CODES } from "@/lib/timezone-countries";
@@ -28,6 +29,18 @@ export async function saveCountry(code: string): Promise<{ error?: string }> {
   if (code === "auto") jar.delete(COUNTRY_COOKIE);
   else if (COUNTRY_CODES.includes(code)) jar.set(COUNTRY_COOKIE, code, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
   else return { error: "Choose a country from the list." };
+  revalidatePath("/", "layout");
+  return {};
+}
+
+// The streaming services you have, as service keys: Where to watch marks them, and Pick for me can
+// stick to them. Kept on this device, like your country.
+export async function saveServices(keys: string[]): Promise<{ error?: string }> {
+  await requireUser();
+  const clean = parseServices(Array.isArray(keys) ? keys.filter((k) => typeof k === "string").join(",") : "");
+  const jar = await cookies();
+  if (clean.length === 0) jar.delete(SERVICES_COOKIE);
+  else jar.set(SERVICES_COOKIE, clean.join(","), { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
   revalidatePath("/", "layout");
   return {};
 }

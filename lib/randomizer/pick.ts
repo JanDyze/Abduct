@@ -19,14 +19,19 @@ export const TIME_OPTIONS = {
 } as const;
 export type TimeOption = keyof typeof TIME_OPTIONS;
 
+// Where it can be played: anywhere, right now without paying extra (free, or on a service you
+// have), or free only. Needs to ask where to watch, so the randomizer applies it, not filterPool.
+export type WatchOption = "any" | "now" | "free";
+
 export type Filters = {
   kinds: Kind[]; // empty: every kind
   genre: string | null;
   time: TimeOption;
   includeWatched: boolean; // a rewatch night
+  watch: WatchOption;
 };
 
-export const DEFAULT_FILTERS: Filters = { kinds: [], genre: null, time: "any", includeWatched: false };
+export const DEFAULT_FILTERS: Filters = { kinds: [], genre: null, time: "any", includeWatched: false, watch: "any" };
 
 // The pool the filters leave. A title on several lists counts once, so it isn't more likely just
 // because it was added twice. A title without a known length (typed in by hand) fits any time.

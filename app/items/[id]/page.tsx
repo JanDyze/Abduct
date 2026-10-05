@@ -9,6 +9,7 @@ import { Comments, OthersComments } from "@/components/comments";
 import { ConfirmDelete } from "@/components/confirm-delete";
 import { ListToggles } from "@/components/list-toggles";
 import { Poster } from "@/components/poster";
+import { TrailerButton } from "@/components/trailer-button";
 import { Screen } from "@/components/screen";
 import { StarRating } from "@/components/star-rating";
 import { WatchedToggle } from "@/components/watched-toggle";
@@ -63,6 +64,7 @@ export default async function ItemPage({ params }: PageProps<"/items/[id]">) {
               <Star className="size-4 fill-primary text-primary" aria-hidden /> {item.score}%<span className="sr-only"> audience score</span>
             </p>
           )}
+          <TrailerButton source={item.source} sourceId={item.sourceId} name={item.name} className="mt-2.5 h-9 px-3.5" />
         </div>
       </div>
 
@@ -80,7 +82,7 @@ export default async function ItemPage({ params }: PageProps<"/items/[id]">) {
 
       {item.source !== "manual" && (
         <Suspense fallback={<WhereToWatchLoading />}>
-          <WhereToWatch source={item.source} sourceId={item.sourceId} />
+          <WhereToWatch source={item.source} sourceId={item.sourceId} name={item.name} />
         </Suspense>
       )}
 

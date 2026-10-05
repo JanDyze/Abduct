@@ -2,6 +2,13 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.17.0 — Press play
+
+- Watch the trailer right in Abduct: there's a Trailer button on every title, and on the UFO's pick.
+- Where to watch opens the title straight in Netflix, Prime Video, Disney+, Hulu, Apple TV, Crunchyroll, YouTube, Google Play or Tubi.
+- Tell Abduct which streaming services you have (Settings, My services). Where to watch puts them first and marks them.
+- Pick for me can stick to what you can play right now: free, or on a service you have. Or to free only. The pick shows where it's on, one tap from playing.
+
 ## 0.16.1 — A whole camera roll
 
 - Pick several screenshots at once (up to ten) and Abduct reads them all, showing how far along it is, then searches every title it found.

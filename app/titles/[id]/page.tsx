@@ -6,6 +6,7 @@ import { Star, Users } from "lucide-react";
 import { z } from "zod";
 import { OthersComments } from "@/components/comments";
 import { Poster } from "@/components/poster";
+import { TrailerButton } from "@/components/trailer-button";
 import { Screen } from "@/components/screen";
 import { AddToMine } from "@/components/social-buttons";
 import { WhereToWatch, WhereToWatchLoading } from "@/components/where-to-watch";
@@ -63,6 +64,7 @@ export default async function TitlePage({ params, searchParams }: PageProps<"/ti
               <Star className="size-4 fill-primary text-primary" aria-hidden /> {title.score}%<span className="sr-only"> audience score</span>
             </p>
           )}
+          <TrailerButton source={title.source} sourceId={title.sourceId} name={title.name} className="mt-2.5 h-9 px-3.5" />
         </div>
       </div>
 
@@ -102,7 +104,7 @@ export default async function TitlePage({ params, searchParams }: PageProps<"/ti
 
       {title.source !== "manual" && (
         <Suspense fallback={<WhereToWatchLoading />}>
-          <WhereToWatch source={title.source} sourceId={title.sourceId} />
+          <WhereToWatch source={title.source} sourceId={title.sourceId} name={title.name} />
         </Suspense>
       )}
 
