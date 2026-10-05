@@ -4,6 +4,7 @@ import { TitleSearch } from "@/components/title-search";
 import { requireUser } from "@/lib/auth";
 import { autoSortAvailable } from "@/lib/lists/auto-sort";
 import { getLists } from "@/lib/lists/queries";
+import { canReadScreenshots } from "@/lib/share/read-screenshot";
 
 export const metadata: Metadata = { title: "Add a title" };
 
@@ -21,6 +22,7 @@ export default async function AddPage({ searchParams }: PageProps<"/add">) {
         lists={lists.map(({ id, name, icon, color }) => ({ id, name, icon, color }))}
         initialList={(from ?? lists.find((l) => l.isDefault) ?? lists[0]).id}
         sortFrom={from || !autoSortAvailable() ? null : (lists.find((l) => l.isDefault)?.id ?? null)}
+        scan={canReadScreenshots()}
       />
     </Screen>
   );

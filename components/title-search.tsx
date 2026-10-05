@@ -6,6 +6,7 @@ import { Check, Loader2, Plus, Search } from "lucide-react";
 import { addCatalogTitle, searchTitles, undoAdd } from "@/app/add/actions";
 import { ListIcon } from "@/components/list-icon";
 import { Poster } from "@/components/poster";
+import { ScreenshotButton } from "@/components/screenshot-button";
 import { Picker } from "@/components/ui/picker";
 import { useUndoToast } from "@/components/undo-toast";
 import { abduct } from "@/lib/abduct";
@@ -31,7 +32,21 @@ const detailsHref = (r: CatalogResult, listId: string) =>
 // pause in typing, and an older answer arriving late never replaces a newer one.
 // `sortFrom`: your default list, when you came here without choosing one: what's added to it then
 // gets sorted into the list it belongs on (lib/lists/auto-sort.ts).
-export function TitleSearch({ lists: initialLists, initialList, sortFrom }: { lists: ListOption[]; initialList: string; sortFrom?: string | null }) {
+// `scan`: a button to look up the titles written in a screenshot; the first is searched, the rest
+// wait as chips to tap.
+export function TitleSearch({
+  lists: initialLists,
+  initialList,
+  sortFrom,
+  scan,
+}: {
+  lists: ListOption[];
+  initialList: string;
+  sortFrom?: string | null;
+  scan?: boolean;
+}) {
+  const [found, setFound] = useState<string[]>([]);
+  const [scanError, setScanError] = useState<string | null>(null);
   const [lists, setLists] = useState(initialLists);
   const [listId, setListId] = useState(initialList);
   const [query, setQuery] = useState("");
@@ -128,10 +143,47 @@ export function TitleSearch({ lists: initialLists, initialList, sortFrom }: { li
             aria-label="Search titles"
             autoFocus
             enterKeyHint="search"
-            className="h-12 w-full rounded-2xl border border-input bg-card pr-10 pl-11 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+            className={cn(
+              "h-12 w-full rounded-2xl border border-input bg-card pl-11 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40",
+              scan ? "pr-20" : "pr-10",
+            )}
           />
-          {searching && <Loader2 className="absolute top-1/2 right-3.5 size-5 -translate-y-1/2 animate-spin text-muted-foreground" aria-hidden />}
+          {searching && <Loader2 className={cn("absolute top-1/2 size-5 -translate-y-1/2 animate-spin text-muted-foreground", scan ? "right-12" : "right-3.5")} aria-hidden />}
+          {scan && (
+            <ScreenshotButton
+              className="absolute top-1/2 right-1 -translate-y-1/2"
+              onResult={(res) => {
+                if ("error" in res) return setScanError(res.error);
+                setScanError(null);
+                setFound(res.titles);
+                setQuery(res.titles[0]);
+              }}
+            />
+          )}
         </div>
+        {scanError && (
+          <p role="alert" className="text-sm text-destructive">
+            {scanError}
+          </p>
+        )}
+        {found.length > 1 && (
+          <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4" aria-label="Titles in your screenshot">
+            {found.map((t) => (
+              <button
+                key={t}
+                type="button"
+                aria-pressed={query === t}
+                onClick={() => setQuery(t)}
+                className={cn(
+                  "flex h-8 shrink-0 items-center rounded-full border px-3 text-sm font-medium whitespace-nowrap transition-colors",
+                  query === t ? "border-primary bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        )}
         <div role="tablist" aria-label="Kind" className="flex gap-1 rounded-xl bg-muted p-1">
           {TABS.map((t) => (
             <button

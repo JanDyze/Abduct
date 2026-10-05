@@ -2,6 +2,11 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.16.0 — Read it off the screen
+
+- Got a screenshot of a recommendation post, a streaming app or a friend's message? Tap the scan button in Discover's search or on Add, pick the screenshot, and Abduct reads the titles written in it and finds them for you.
+- In Discover every title in it is searched at once; on Add, the first is searched and the rest wait as chips to tap.
+
 ## 0.15.1 — Quicker sorting
 
 - Sorting what you add into the right list is quicker now.

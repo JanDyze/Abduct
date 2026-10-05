@@ -5,6 +5,7 @@ import { SavedTitles } from "@/components/catalog-poster";
 import { DiscoverSearchBox } from "@/components/discover-search-box";
 import { GenreChips } from "@/components/genre-chips";
 import { Screen } from "@/components/screen";
+import { canReadScreenshots } from "@/lib/share/read-screenshot";
 import { requireUser } from "@/lib/auth";
 import { getLists, savedTitles } from "@/lib/lists/queries";
 import { searchCatalog, searchTopics, type SearchOutcome, type Topic } from "@/lib/titles/catalog";
@@ -70,7 +71,7 @@ export default async function DiscoverSearchPage({ searchParams }: PageProps<"/d
 
   return (
     <Screen back={{ href: "/discover", label: "Discover" }} title="Search">
-      <DiscoverSearchBox initial={q}>
+      <DiscoverSearchBox initial={q} scan={canReadScreenshots()}>
       <SavedTitles saved={saved} lists={lists.map(({ id, name, icon, color, isDefault }) => ({ id, name, icon, color, isDefault }))}>
 
       {!searching ? (
