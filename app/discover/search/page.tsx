@@ -53,8 +53,8 @@ function topicMatch(t: Topic): Match {
 export default async function DiscoverSearchPage({ searchParams }: PageProps<"/discover/search">) {
   const user = await requireUser();
   const { q: raw } = await searchParams;
-  const q = (typeof raw === "string" ? raw : "").trim().slice(0, 300);
-  const terms = splitTerms(q);
+  const q = (typeof raw === "string" ? raw : "").trim().slice(0, 600);
+  const terms = splitTerms(q, 12);
   const several = terms.length > 1;
   const searching = terms.length > 0;
 

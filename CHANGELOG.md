@@ -2,6 +2,11 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.16.1 — A whole camera roll
+
+- Pick several screenshots at once (up to ten) and Abduct reads them all, showing how far along it is, then searches every title it found.
+- Discover now searches up to twelve titles side by side.
+
 ## 0.16.0 — Read it off the screen
 
 - Got a screenshot of a recommendation post, a streaming app or a friend's message? Tap the scan button in Discover's search or on Add, pick the screenshot, and Abduct reads the titles written in it and finds them for you.

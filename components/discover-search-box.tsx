@@ -12,7 +12,7 @@ const hrefFor = (q: string) => (q ? `/discover/search?${new URLSearchParams({ q 
 // Discover's search field, over its results (children). The results are the page itself
 // (/discover/search?q=...), so typing updates the address after a pause, and Back or a shared link
 // shows the same search. While a search is on its way, the results give way to a shimmering grid.
-// `scan`: a button to search the titles written in a screenshot, all at once (comma-separated).
+// `scan`: a button to search the titles written in screenshots, all at once (comma-separated).
 export function DiscoverSearchBox({ initial, scan, children }: { initial: string; scan?: boolean; children: React.ReactNode }) {
   const router = useRouter();
   const [query, setQuery] = useState(initial);
@@ -46,7 +46,7 @@ export function DiscoverSearchBox({ initial, scan, children }: { initial: string
             aria-label="Search Discover"
             autoFocus
             enterKeyHint="search"
-            maxLength={300}
+            maxLength={600}
             className={cn(
               "h-12 w-full rounded-2xl border border-input bg-card pl-11 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40",
               scan ? "pr-20" : "pr-10",
@@ -59,7 +59,7 @@ export function DiscoverSearchBox({ initial, scan, children }: { initial: string
               onResult={(res) => {
                 if ("error" in res) return setScanError(res.error);
                 setScanError(null);
-                const q = res.titles.join(", ").slice(0, 300);
+                const q = res.titles.slice(0, 12).join(", ").slice(0, 600);
                 setQuery(q);
                 start(() => router.replace(hrefFor(q), { scroll: false }));
               }}

@@ -25,27 +25,53 @@ async function shrink(file: File): Promise<Blob | null> {
 
 export type ScreenshotResult = { titles: string[] } | { error: string };
 
-// A button in a search field: pick a screenshot (a post, a streaming app, a friend's message) and
-// the titles written in it come back (app/api/read-screenshot), for the search to look up.
+const MAX_FILES = 10;
+
+// One screenshot's titles (app/api/read-screenshot), or an error message.
+async function readOne(file: File): Promise<ScreenshotResult> {
+  const small = await shrink(file);
+  const body = small ?? (file.size <= 4_000_000 && /^image\/(jpeg|png|webp|gif)$/.test(file.type) ? file : null);
+  if (!body) return { error: "That picture can't be read here. Try a PNG or JPEG screenshot." };
+  try {
+    const res = await fetch("/api/read-screenshot", { method: "POST", headers: { "content-type": body.type || "image/jpeg" }, body });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !Array.isArray(json?.titles)) return { error: json?.error ?? "Couldn't read that screenshot." };
+    return { titles: json.titles };
+  } catch {
+    return { error: "Couldn't read that screenshot. Check your connection." };
+  }
+}
+
+// A button in a search field: pick one or more screenshots (posts, a streaming app, a friend's
+// messages) and the titles written in them come back, in order and without repeats, for the
+// search to look up. Up to ten at a time, read three at once.
 export function ScreenshotButton({ onResult, className }: { onResult: (result: ScreenshotResult) => void; className?: string }) {
   const input = useRef<HTMLInputElement>(null);
-  const [reading, setReading] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const reading = progress !== null;
 
-  const read = async (file: File) => {
-    setReading(true);
-    try {
-      const small = await shrink(file);
-      const body = small ?? (file.size <= 4_000_000 && /^image\/(jpeg|png|webp|gif)$/.test(file.type) ? file : null);
-      if (!body) return onResult({ error: "That picture can't be read here. Try a PNG or JPEG screenshot." });
-      const res = await fetch("/api/read-screenshot", { method: "POST", headers: { "content-type": body.type || "image/jpeg" }, body });
-      const json = await res.json().catch(() => null);
-      if (!res.ok || !Array.isArray(json?.titles)) return onResult({ error: json?.error ?? "Couldn't read that screenshot." });
-      onResult(json.titles.length ? { titles: json.titles } : { error: "No titles written in that screenshot." });
-    } catch {
-      onResult({ error: "Couldn't read that screenshot. Check your connection." });
-    } finally {
-      setReading(false);
-    }
+  const read = async (files: File[]) => {
+    const picked = files.slice(0, MAX_FILES);
+    setProgress({ done: 0, total: picked.length });
+    const results: ScreenshotResult[] = new Array(picked.length);
+    let next = 0;
+    const worker = async () => {
+      while (next < picked.length) {
+        const i = next++;
+        results[i] = await readOne(picked[i]);
+        setProgress((p) => p && { ...p, done: p.done + 1 });
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(3, picked.length) }, worker));
+    setProgress(null);
+
+    const seen = new Set<string>();
+    const titles = results
+      .flatMap((r) => ("titles" in r ? r.titles : []))
+      .filter((t) => !seen.has(t.toLowerCase()) && seen.add(t.toLowerCase()));
+    if (titles.length) return onResult({ titles });
+    const failed = results.find((r): r is { error: string } => "error" in r);
+    onResult({ error: failed?.error ?? (picked.length > 1 ? "No titles written in those screenshots." : "No titles written in that screenshot.") });
   };
 
   return (
@@ -54,26 +80,37 @@ export function ScreenshotButton({ onResult, className }: { onResult: (result: S
         type="button"
         onClick={() => input.current?.click()}
         disabled={reading}
-        aria-label="Find titles in a screenshot"
-        title="Find titles in a screenshot"
+        aria-label="Find titles in screenshots"
+        title="Find titles in screenshots"
         className={cn("flex size-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-70", className)}
       >
-        {reading ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <ScanText className="size-5" aria-hidden />}
+        {reading ? (
+          progress.total > 1 ? (
+            <span className="text-xs font-semibold tabular-nums">
+              {progress.done}/{progress.total}
+            </span>
+          ) : (
+            <Loader2 className="size-5 animate-spin" aria-hidden />
+          )
+        ) : (
+          <ScanText className="size-5" aria-hidden />
+        )}
       </button>
       <input
         ref={input}
         type="file"
         accept="image/*"
+        multiple
         hidden
         onChange={(e) => {
-          const file = e.target.files?.[0];
+          const files = [...(e.target.files ?? [])];
           e.target.value = "";
-          if (file) read(file);
+          if (files.length) read(files);
         }}
       />
       {reading && (
         <span role="status" className="sr-only">
-          Reading the screenshot…
+          {progress.total > 1 ? `Reading screenshot ${Math.min(progress.done + 1, progress.total)} of ${progress.total}…` : "Reading the screenshot…"}
         </span>
       )}
     </>
