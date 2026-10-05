@@ -2,6 +2,12 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.15.0 — Sorted on arrival
+
+- Add something without choosing a list (the + in Discover, search from Home, Add on a title's page) and Claude files it into the list it belongs on a moment later, judging by what's already on each of your lists. If none fits, it makes a new list for it.
+- The Undo message tells you where it went, and Undo still takes it off.
+- Adding from a list, or choosing a list yourself, puts it exactly there, as before.
+
 ## 0.14.1 — Hold a title
 
 - Hold a title on one of your lists for its quick actions: mark it watched (or not), put it on your other lists or take it off them, move it to another list, or remove it from this one.

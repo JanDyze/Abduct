@@ -8,6 +8,7 @@ import { addExistingTitle, undoAdd } from "@/app/add/actions";
 import { createNamedList, likeList } from "@/app/lists/actions";
 import { ListIcon } from "@/components/list-icon";
 import { useUndoToast } from "@/components/undo-toast";
+import { sortAdded } from "@/lib/sort-add";
 import { abduct } from "@/lib/abduct";
 import type { ListOption } from "@/lib/lists/icons";
 import { cn } from "@/lib/utils";
@@ -54,7 +55,21 @@ export function LikeButton({ listId, liked: initialLiked, likes: initialLikes }:
 // Once it's on one of your lists, links to your copy instead.
 const PENDING = "pending";
 
-export function AddToMine({ titleId, yourItemId, target, lists }: { titleId: string; yourItemId: string | null; target: ListOption; lists: ListOption[] }) {
+// `autoSort`: the big button adds to your default list, and Claude then moves it to the list it
+// belongs on (lib/lists/auto-sort.ts); the button follows it there.
+export function AddToMine({
+  titleId,
+  yourItemId,
+  target: defaultTarget,
+  lists,
+  autoSort,
+}: {
+  titleId: string;
+  yourItemId: string | null;
+  target: ListOption;
+  lists: ListOption[];
+  autoSort?: boolean;
+}) {
   const toast = useUndoToast();
   const [myLists, setMyLists] = useState(lists);
   const [added, setAdded] = useState<Record<string, string>>({}); // list id -> the item on it (or PENDING)
@@ -66,6 +81,9 @@ export function AddToMine({ titleId, yourItemId, target, lists }: { titleId: str
   // Once you've added or undone something here, this button keeps its own state: the page refreshes
   // after an add and would otherwise swap it for "open it" before you could undo.
   const [touched, setTouched] = useState(false);
+  const [sortedTo, setSortedTo] = useState<ListOption | null>(null);
+  const [sorting, setSorting] = useState(false);
+  const target = sortedTo ?? defaultTarget;
   const itemLink = touched ? null : yourItemId;
   if (itemLink) {
     return (
@@ -108,7 +126,22 @@ export function AddToMine({ titleId, yourItemId, target, lists }: { titleId: str
       return setFailed(true);
     }
     setAdded((a) => ({ ...a, [list.id]: res.itemId }));
-    if (!res.already) toast.show(`Added to ${list.name}`, () => remove(list, res.itemId));
+    if (res.already) return;
+    toast.show(`Added to ${list.name}`, () => remove(list, res.itemId));
+    if (!autoSort || list.id !== defaultTarget.id || sortedTo) return;
+    setSorting(true);
+    const sorted = await sortAdded(res.itemId);
+    setSorting(false);
+    if (!sorted) return;
+    const dest = { id: sorted.listId, name: sorted.listName, icon: sorted.icon, color: sorted.color };
+    setMyLists((ls) => (ls.some((l) => l.id === dest.id) ? ls : [...ls, dest]));
+    setAdded((a) => {
+      if (a[list.id] !== res.itemId) return a;
+      const next = without(list.id)(a);
+      return { ...next, [dest.id]: sorted.itemId };
+    });
+    setSortedTo(dest);
+    toast.show(sorted.created ? `Made a ${dest.name} list for it` : `Sorted into ${dest.name}`, () => remove(dest, sorted.itemId));
   };
 
   const createAndAdd = (e: React.FormEvent) => {
@@ -138,7 +171,9 @@ export function AddToMine({ titleId, yourItemId, target, lists }: { titleId: str
           )}
         >
           {onTarget ? <Check className="size-5 shrink-0" strokeWidth={2.5} aria-hidden /> : <Plus className="size-5 shrink-0" strokeWidth={2.5} aria-hidden />}
-          <span className="truncate">{onTarget ? `Added to ${target.name}` : `Add to ${target.name}`}</span>
+          <span className="truncate">
+            {sorting ? "Sorting it…" : onTarget ? `Added to ${target.name}` : autoSort && !sortedTo ? "Add to my lists" : `Add to ${target.name}`}
+          </span>
         </button>
         <Menu.Root>
           <Menu.Trigger

@@ -9,6 +9,7 @@ import { Poster } from "@/components/poster";
 import { Screen } from "@/components/screen";
 import { AddToMine } from "@/components/social-buttons";
 import { WhereToWatch, WhereToWatchLoading } from "@/components/where-to-watch";
+import { autoSortAvailable } from "@/lib/lists/auto-sort";
 import { requireUser } from "@/lib/auth";
 import { titleMeta } from "@/lib/format";
 import { firstItemOf, getLists } from "@/lib/lists/queries";
@@ -80,6 +81,7 @@ export default async function TitlePage({ params, searchParams }: PageProps<"/ti
           titleId={title.id}
           yourItemId={yourItem}
           target={{ id: target.id, name: target.name, icon: target.icon, color: target.color }}
+          autoSort={target.isDefault && target.id !== listParam && autoSortAvailable()}
           lists={lists.map(({ id, name, icon, color }) => ({ id, name, icon, color }))}
         />
       </div>

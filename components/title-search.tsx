@@ -13,6 +13,7 @@ import type { ListOption } from "@/lib/lists/icons";
 import type { SearchOutcome } from "@/lib/titles/catalog";
 import { KIND_LABEL, KIND_PLURAL, KINDS, type Kind } from "@/lib/titles/kinds";
 import type { CatalogResult } from "@/lib/titles/normalize";
+import { sortAdded } from "@/lib/sort-add";
 import { cn } from "@/lib/utils";
 import { sound } from "@/lib/sound";
 
@@ -28,7 +29,10 @@ const detailsHref = (r: CatalogResult, listId: string) =>
 
 // Search movies, series and anime and add them to a list with one tap. Searching waits for a
 // pause in typing, and an older answer arriving late never replaces a newer one.
-export function TitleSearch({ lists, initialList }: { lists: ListOption[]; initialList: string }) {
+// `sortFrom`: your default list, when you came here without choosing one: what's added to it then
+// gets sorted into the list it belongs on (lib/lists/auto-sort.ts).
+export function TitleSearch({ lists: initialLists, initialList, sortFrom }: { lists: ListOption[]; initialList: string; sortFrom?: string | null }) {
+  const [lists, setLists] = useState(initialLists);
   const [listId, setListId] = useState(initialList);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<Kind | "all">("all");
@@ -68,7 +72,17 @@ export function TitleSearch({ lists, initialList }: { lists: ListOption[]; initi
     const res = await addCatalogTitle(listId, r.source, r.sourceId);
     setAdded((a) => ({ ...a, [key]: res.ok ? { itemId: res.itemId, already: res.already } : { error: res.error } }));
     if (!res.ok) sound.error();
-    if (res.ok && !res.already) toast.show(`Added ${r.name} to ${list?.name}`, () => undo(r, res.itemId));
+    if (!res.ok || res.already) return;
+    toast.show(`Added ${r.name} to ${list?.name}`, () => undo(r, res.itemId));
+    if (listId !== sortFrom) return;
+    const sorted = await sortAdded(res.itemId);
+    if (!sorted) return;
+    if (sorted.created) setLists((ls) => (ls.some((l) => l.id === sorted.listId) ? ls : [...ls, { id: sorted.listId, name: sorted.listName, icon: sorted.icon, color: sorted.color }]));
+    setAdded((a) => {
+      const now = a[key];
+      return typeof now === "object" && "itemId" in now && now.itemId === res.itemId ? { ...a, [key]: { itemId: sorted.itemId, already: false } } : a;
+    });
+    toast.show(sorted.created ? `Made a ${sorted.listName} list for ${r.name}` : `Sorted ${r.name} into ${sorted.listName}`, () => undo(r, sorted.itemId));
   };
 
   // Added by mistake: tapping the check (or Undo) takes it off the list again.

@@ -12,6 +12,7 @@ import { useUndoToast } from "@/components/undo-toast";
 import { abduct } from "@/lib/abduct";
 import type { ListOption } from "@/lib/lists/icons";
 import type { CatalogResult } from "@/lib/titles/normalize";
+import { sortAdded } from "@/lib/sort-add";
 import { useLongPress } from "@/lib/use-long-press";
 import { cn } from "@/lib/utils";
 import { sound } from "@/lib/sound";
@@ -35,8 +36,9 @@ export function SavedTitles({ saved, lists = [], children }: { saved: Record<str
 
 const PENDING = "pending";
 
-// Adding catalog titles to your default list from a row or grid of posters, with Undo; or, holding
-// a poster, to whichever of your lists you choose. One per row or grid: it owns the undo toast and
+// Adding catalog titles from a row or grid of posters, with Undo: onto your default list, then
+// Claude moves each to the list it belongs on (lib/lists/auto-sort.ts); or, holding a poster, to
+// whichever of your lists you choose. One per row or grid: it owns the undo toast and
 // the lists sheet (render `toast`).
 export function useCatalogAdds(listName: string) {
   const { saved, lists } = useContext(Saved);
@@ -77,7 +79,16 @@ export function useCatalogAdds(listName: string) {
     const res = await addTrendingTitle(r.source, r.sourceId);
     setAdded((a) => ({ ...a, [keyOf(r)]: res.ok ? { itemId: res.itemId } : "failed" }));
     if (!res.ok) sound.error();
-    if (res.ok && !res.already) toast.show(`Added ${r.name} to ${listName}`, () => undo(r, res.itemId));
+    if (!res.ok || res.already) return;
+    toast.show(`Added ${r.name} to ${listName}`, () => undo(r, res.itemId));
+    // then Claude moves it to the list it belongs on (or a new one)
+    const sorted = await sortAdded(res.itemId);
+    if (!sorted) return;
+    setAdded((a) => {
+      const now = a[keyOf(r)];
+      return typeof now === "object" && now?.itemId === res.itemId ? { ...a, [keyOf(r)]: { itemId: sorted.itemId } } : a;
+    });
+    toast.show(sorted.created ? `Made a ${sorted.listName} list for ${r.name}` : `Sorted ${r.name} into ${sorted.listName}`, () => undo(r, sorted.itemId));
   };
 
   const setPick = (key: string, listId: string, itemId: string | null) =>
