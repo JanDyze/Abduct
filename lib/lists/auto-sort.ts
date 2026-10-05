@@ -9,7 +9,7 @@ import { listItems, lists, titles } from "@/lib/db/schema";
 import { LIST_COLOR_IDS, LIST_ICON_IDS } from "@/lib/lists/icons";
 
 // Sorting a title as it's added: anything added without choosing a list lands on your default list
-// at once, then Claude (the most capable model) looks at your lists and moves it to the one it
+// at once, then Claude (Haiku: quick and cheap) looks at your lists and moves it to the one it
 // belongs on, or makes a new list for it when none fits. It's the same list item, moved, so Undo
 // still takes it off. Needs ANTHROPIC_API_KEY; without it, or if Claude can't decide, it stays put.
 
@@ -62,7 +62,7 @@ export async function autoSortItem(userId: string, itemId: string): Promise<Sort
     .where(eq(lists.userId, userId))
     .orderBy(lists.position);
   const samples = await db.execute<{ list_id: string; names: string[] }>(sql`
-    select list_id, (array_agg(name order by added_at desc))[1:8] as names
+    select list_id, (array_agg(name order by added_at desc))[1:6] as names
     from ${listItems} join ${titles} on ${titles.id} = ${listItems.titleId}
     where ${listItems.userId} = ${userId} and ${listItems.titleId} <> ${item.titleId}
     group by list_id`);
@@ -72,18 +72,16 @@ export async function autoSortItem(userId: string, itemId: string): Promise<Sort
     const names = sampleOf.get(l.id) ?? [];
     return `${ref}: "${l.name}"${l.isDefault ? " (default)" : ""}, ${l.color}: ${names.length ? names.join("; ") : "(empty)"}`;
   });
-  const titleLine = `${item.name}${item.year ? ` (${item.year})` : ""}, ${item.kind}${item.genres.length ? `, ${item.genres.join("/")}` : ""}${item.overview ? ` - ${item.overview.slice(0, 300)}` : ""}`;
+  const titleLine = `${item.name}${item.year ? ` (${item.year})` : ""}, ${item.kind}${item.genres.length ? `, ${item.genres.join("/")}` : ""}${item.overview ? ` - ${item.overview.slice(0, 200)}` : ""}`;
 
-  client ??= new Anthropic({ timeout: 45_000, maxRetries: 1 });
+  client ??= new Anthropic({ timeout: 20_000, maxRetries: 1 });
   let decision: z.infer<typeof Decision>;
   try {
     const res = await client.beta.messages.parse({
-      model: "claude-fable-5-1",
-      max_tokens: 8000,
-      // a declined request is retried on Anthropic's recommended fallback model instead of failing
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      output_config: { effort: "low", format: betaZodOutputFormat(Decision) },
+      // a small, fast, cheap model: picking a list from a handful is a quick classification
+      model: "claude-haiku-4-5",
+      max_tokens: 1024,
+      output_config: { format: betaZodOutputFormat(Decision) },
       system: SYSTEM,
       messages: [{ role: "user", content: `<lists>\n${listLines.join("\n")}\n</lists>\n\n<new_title>\n${titleLine}\n</new_title>\n\nWhich list does it go on?` }],
     });

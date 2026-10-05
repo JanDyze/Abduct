@@ -2,6 +2,10 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.15.1 — Quicker sorting
+
+- Sorting what you add into the right list is quicker now.
+
 ## 0.15.0 — Sorted on arrival
 
 - Add something without choosing a list (the + in Discover, search from Home, Add on a title's page) and Claude files it into the list it belongs on a moment later, judging by what's already on each of your lists. If none fits, it makes a new list for it.

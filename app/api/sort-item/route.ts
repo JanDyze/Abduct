@@ -5,7 +5,7 @@ import { autoSortItem } from "@/lib/lists/auto-sort";
 // Sorts a title just added to your default list into the list it belongs on (lib/lists/auto-sort.ts).
 // A plain request rather than a server action, so it runs alongside further adds instead of
 // queueing them behind it.
-export const maxDuration = 60;
+export const maxDuration = 30;
 
 export async function POST(request: Request) {
   const user = await getUser();
