@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0a09">
+<title>Abduct</title>
+<!-- What opening the app shows at once while the real page is on its way: the service worker
+     (public/sw.js) answers the app's launch with this page from its cache, so it paints instantly,
+     and the script below asks for the real page straight away. The browser keeps this on screen,
+     animating, until that page arrives. Everything is inline or cached: no network needed to draw. -->
+<style>
+  :root { --bg: #0b0a09; --fg: #f7ecdc; --muted: #a3978a; --beam: #fba825; color-scheme: dark; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--fg);
+    font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased;
+    -webkit-user-select: none; user-select: none; }
+  main { display: flex; flex-direction: column; align-items: center; gap: 1.4rem; animation: in .35s ease-out both; }
+  .stage { position: relative; width: 220px; height: 250px; }
+
+  /* Stars drifting past, so it feels like flight. */
+  .star { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: var(--fg); opacity: 0; animation: twinkle 2.4s linear infinite; }
+  .star:nth-child(1) { top: 10%; left: 6%; animation-delay: 0s; }
+  .star:nth-child(2) { top: 30%; left: 92%; animation-delay: .6s; }
+  .star:nth-child(3) { top: 62%; left: 4%; animation-delay: 1.2s; }
+  .star:nth-child(4) { top: 4%; left: 70%; animation-delay: 1.8s; }
+  .star:nth-child(5) { top: 78%; left: 88%; animation-delay: .9s; }
+
+  .ufo { position: absolute; top: 18px; left: 50%; width: 200px; margin-left: -100px; animation: hover 1.6s ease-in-out infinite; z-index: 2; }
+  .ufo img { width: 100%; display: block; filter: drop-shadow(0 6px 18px rgb(251 168 37 / 25%)); }
+
+  /* The beam, pulsing, and a poster riding up it again and again. */
+  .beam { position: absolute; top: 74px; left: 50%; width: 170px; height: 160px; margin-left: -85px;
+    clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%);
+    background: linear-gradient(to bottom, rgb(251 168 37 / 75%), rgb(251 168 37 / 22%) 70%, transparent);
+    animation: beam 1.1s ease-in-out infinite; transform-origin: top; }
+  .poster { position: absolute; left: 50%; bottom: 14px; width: 34px; height: 50px; margin-left: -17px; border-radius: 5px;
+    background: linear-gradient(160deg, #3a2f22, #1a1510); box-shadow: 0 0 0 1.5px rgb(247 236 220 / 25%), 0 0 18px rgb(251 168 37 / 60%);
+    animation: lift 1.8s cubic-bezier(.5, 0, .7, .4) infinite; z-index: 1; }
+  .poster::after { content: ""; position: absolute; inset: 6px 6px auto; height: 3px; border-radius: 2px; background: rgb(251 168 37 / 70%);
+    box-shadow: 0 7px 0 rgb(247 236 220 / 25%), 0 14px 0 rgb(247 236 220 / 18%); }
+  .ground { position: absolute; bottom: 8px; left: 50%; width: 120px; height: 10px; margin-left: -60px; border-radius: 50%;
+    background: radial-gradient(rgb(251 168 37 / 35%), transparent 70%); animation: glow 1.1s ease-in-out infinite; }
+
+  .status { display: flex; flex-direction: column; align-items: center; gap: .55rem; min-height: 3.2rem; }
+  .dots { display: flex; gap: 7px; }
+  .dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--beam); animation: dot 1.05s ease-in-out infinite; }
+  .dots i:nth-child(2) { animation-delay: .15s; }
+  .dots i:nth-child(3) { animation-delay: .3s; }
+  .line { margin: 0; color: var(--muted); transition: opacity .25s; }
+
+  @keyframes in { from { opacity: 0; transform: scale(.96); } }
+  @keyframes hover { 50% { transform: translateY(-9px) rotate(-2deg); } }
+  @keyframes beam { 50% { opacity: .55; transform: scaleX(.93); } }
+  @keyframes glow { 50% { opacity: .5; transform: scaleX(.85); } }
+  @keyframes lift {
+    0% { transform: translateY(0) scale(1) rotate(0); opacity: 0; }
+    12% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateY(-128px) scale(.35) rotate(-14deg); opacity: 0; }
+  }
+  @keyframes dot { 0%, 80%, 100% { transform: scale(.55); opacity: .4; } 40% { transform: scale(1); opacity: 1; } }
+  @keyframes twinkle { 0% { opacity: 0; transform: translateX(0); } 30% { opacity: .8; } 100% { opacity: 0; transform: translateX(-40px); } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; } .poster { opacity: 0; } }
+</style>
+</head>
+<body>
+<main role="status" aria-live="polite">
+  <div class="stage" aria-hidden="true">
+    <span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span><span class="star"></span>
+    <div class="beam"></div>
+    <div class="poster"></div>
+    <div class="ground"></div>
+    <div class="ufo"><img src="/ship.svg" alt=""></div>
+  </div>
+  <div class="status">
+    <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+    <p class="line" id="line">Warming up the tractor beam…</p>
+  </div>
+</main>
+<script>
+  // Ask for the real page now; this one stays up, animating, until it arrives.
+  requestAnimationFrame(() => setTimeout(() => location.replace(location.href), 0));
+  var lines = ["Warming up the tractor beam…", "Scanning your lists…", "Picking up signals…", "Beaming you in…", "Almost there…"];
+  var i = 0, el = document.getElementById("line");
+  setInterval(function () {
+    i = Math.min(i + 1, lines.length - 1);
+    el.style.opacity = "0";
+    setTimeout(function () { el.textContent = lines[i]; el.style.opacity = "1"; }, 250);
+  }, 1300);
+</script>
+</body>
+</html>

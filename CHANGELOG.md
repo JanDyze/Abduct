@@ -2,6 +2,10 @@
 
 All notable changes to Abduct, one version per feature.
 
+## 0.17.1 — Beaming you in
+
+- Opening the app shows the UFO at once, beaming up a poster while Abduct loads, instead of a blank screen with the logo.
+
 ## 0.17.0 — Press play
 
 - Watch the trailer right in Abduct: there's a Trailer button on every title, and on the UFO's pick.
